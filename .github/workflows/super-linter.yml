@@ -19,5 +19,5 @@ jobs:
     with:
       super-linter-variables: |
         {
-          VALIDATE_GITHUB_ACTIONS: false
+          "VALIDATE_GITHUB_ACTIONS": false
         }
