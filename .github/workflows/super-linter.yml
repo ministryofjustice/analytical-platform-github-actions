@@ -1,5 +1,5 @@
 ---
-name: 🦝 Super-Linter
+name: 🦝 Super Linter
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions: {}
 
 jobs:
   super-linter:
-    name: Super-Linter
+    name: Super Linter
     permissions:
       contents: read
       packages: read

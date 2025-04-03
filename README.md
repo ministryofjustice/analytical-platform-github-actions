@@ -7,3 +7,17 @@
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/ministryofjustice/analytical-platform-github-actions)
 
 This repository is a store for Analytical Platform's composite actions and reusable workflows.
+
+## Reusable Workflows
+
+### Dependency Review
+
+Runs [actions/dependency-review-action](https://github.com/actions/dependency-review-action)
+
+### Super Linter
+
+Runs [super-linter/super-linter](https://github.com/super-linter/super-linter)
+
+### Zizmor
+
+Runs [woodruffw/zizmor](https://github.com/woodruffw/zizmor)

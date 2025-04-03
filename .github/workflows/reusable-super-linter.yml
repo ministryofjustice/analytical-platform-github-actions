@@ -11,7 +11,7 @@ permissions: {}
 
 jobs:
   super-linter:
-    name: Super-Linter
+    name: Super Linter
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,7 +25,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Parse Super-Linter Variables
+      - name: Parse Super Linter Variables
         id: parse_super_linter_variables
         shell: bash
         env:
@@ -33,7 +33,7 @@ jobs:
         run: |
           jq -r 'to_entries | .[] | "\(.key)=\(.value)"' <<< "${SUPER_LINTER_VARIABLES}" >>"${GITHUB_ENV}"
 
-      - name: Super-Linter
+      - name: Super Linter
         id: super_linter
         uses: super-linter/super-linter/slim@4e8a7c2bf106c4c766c816b35ec612638dc9b6b2 # v7.3.0
         env:
