@@ -10,6 +10,18 @@ This repository is a store for Analytical Platform's composite actions and reusa
 
 ## Reusable Workflows
 
+### Container Release
+
+Builds and pushes a container GHCR, including attestations
+
+### Container Scan
+
+Builds and scans a container for vulnerabilities with [Trivy](https://github.com/aquasecurity/trivy) using [aquasecurity/trivy-action](https://github.com/aquasecurity/trivy-action)
+
+### Container Test
+
+Builds and tests a container with [Container Structure Test](https://github.com/GoogleContainerTools/container-structure-test)
+
 ### Dependency Review
 
 Runs [actions/dependency-review-action](https://github.com/actions/dependency-review-action)

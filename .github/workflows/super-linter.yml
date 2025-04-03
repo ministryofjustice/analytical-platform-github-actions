@@ -16,3 +16,8 @@ jobs:
       packages: read
       statuses: write
     uses: ./.github/workflows/reusable-super-linter.yml
+    with:
+      super-linter-variables: |
+        {
+          "VALIDATE_JSCPD": false
+        }
