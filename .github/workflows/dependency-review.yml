@@ -10,6 +10,7 @@ permissions: {}
 
 jobs:
   dependency-review:
+    name: Dependency Review
     permissions:
       contents: read
-    uses: ./.github/workflows/shared-dependency-review.yml
+    uses: ./.github/workflows/reusable-dependency-review.yml

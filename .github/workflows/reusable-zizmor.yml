@@ -5,7 +5,8 @@ on:
 permissions: {}
 
 jobs:
-  dependency-review:
+  zizmor:
+    name: Zizmor
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -22,8 +23,8 @@ jobs:
         id: setup_uv
         uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
 
-      - name: Run Zizmor
-        id: run_zizmor
+      - name: Zizmor
+        id: zizmor
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
