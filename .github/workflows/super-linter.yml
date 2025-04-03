@@ -15,4 +15,4 @@ jobs:
       contents: read
       packages: read
       statuses: write
-    uses: ./.github/workflows/reusable-super-linter.yml
+    uses: ./.github/workflows/reusable/super-linter.yml

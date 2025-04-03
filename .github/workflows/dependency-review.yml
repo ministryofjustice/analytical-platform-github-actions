@@ -13,4 +13,4 @@ jobs:
     name: Dependency Review
     permissions:
       contents: read
-    uses: ./.github/workflows/reusable-dependency-review.yml
+    uses: ./.github/workflows/reusable/dependency-review.yml
