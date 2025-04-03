@@ -26,6 +26,10 @@ Builds and tests a container with [Container Structure Test](https://github.com/
 
 Runs [actions/dependency-review-action](https://github.com/actions/dependency-review-action)
 
+### Scheduled Container Scan
+
+Pulls latest release of a container and scans for vulnerabilities with [Trivy](https://github.com/aquasecurity/trivy) using [aquasecurity/trivy-action](https://github.com/aquasecurity/trivy-action)
+
 ### Super Linter
 
 Runs [super-linter/super-linter](https://github.com/super-linter/super-linter)
