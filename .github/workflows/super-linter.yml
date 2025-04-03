@@ -9,8 +9,8 @@ on:
 permissions: {}
 
 jobs:
-  zizmor:
-    name: Zizmor
+  super-linter:
+    name: Super-Linter
     permissions:
       contents: read
       packages: read
