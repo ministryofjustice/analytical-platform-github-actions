@@ -31,7 +31,7 @@ jobs:
         env:
           SUPER_LINTER_VARIABLES: ${{ inputs.super-linter-variables }}
         run: |
-          jq -r 'to_entries | .[] | "export \(.key)=\(.value)"' <<< "${SUPER_LINTER_VARIABLES}" >>"${GITHUB_ENV}"
+          jq -r 'to_entries | .[] | "\(.key)=\(.value)"' <<< "${SUPER_LINTER_VARIABLES}" >>"${GITHUB_ENV}"
 
       - name: Super-Linter
         id: super_linter
