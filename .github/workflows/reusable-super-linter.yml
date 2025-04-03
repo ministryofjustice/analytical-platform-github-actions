@@ -1,6 +1,11 @@
 ---
 on:
   workflow_call:
+    inputs:
+      super-linter-variables:
+        type: string
+        required: false
+        default: "{}"
 
 permissions: {}
 
@@ -19,6 +24,13 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+
+      - name: Parse Super-Linter Variables
+        id: parse_super_linter_variables
+        shell: bash
+        run: |
+          echo '${{ inputs.super-linter-variables }}' > super-linter-variables.json
+          jq -r 'to_entries | .[] | "export \(.key)=\(.value)"' super-linter-variables.json >>"${GITHUB_ENV}"
 
       - name: Super-Linter
         id: super_linter
