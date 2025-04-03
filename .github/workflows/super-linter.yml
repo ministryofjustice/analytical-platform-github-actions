@@ -16,10 +16,3 @@ jobs:
       packages: read
       statuses: write
     uses: ./.github/workflows/reusable-super-linter.yml
-    with:
-      super-linter-variables: |
-        {
-          "VALIDATE_GITHUB_ACTIONS": false,
-          "VALIDATE_JSON": false,
-          "VALIDATE_JSON_PRETTIER": false
-        }
