@@ -1,0 +1,17 @@
+---
+name: 🌈 Zizmor
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  zizmor:
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/shared-zizmor.yml
