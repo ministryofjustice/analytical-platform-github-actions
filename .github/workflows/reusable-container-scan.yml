@@ -54,8 +54,10 @@ jobs:
               jq -r '.content' <<< "${downloadTrivyignore}" | base64 --decode > .base-trivyignore
 
               if [[ ! -f .trivyignore ]]; then
+                echo ".trivyignore not found, creating new file"
                 mv .base-trivyignore .trivyignore
               else
+                echo ".trivyignore already exists, merging with existing file"
                 cat .base-trivyignore >> .trivyignore
               fi
 
