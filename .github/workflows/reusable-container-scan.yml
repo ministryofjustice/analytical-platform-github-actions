@@ -34,6 +34,8 @@ jobs:
       - name: Generate .trivyignore
         id: generate_trivyignore
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           imageName=$(grep "^FROM" Dockerfile | cut -d' ' -f2 | cut -d':' -f1)
           imageVersion=$(grep "^FROM" Dockerfile | cut -d':' -f2 | cut -d'@' -f1)
