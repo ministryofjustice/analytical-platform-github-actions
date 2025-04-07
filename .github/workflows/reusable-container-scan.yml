@@ -31,6 +31,46 @@ jobs:
           push: false
           tags: ${{ github.sha }}
 
+      - name: Generate .trivyignore
+        id: generate_trivyignore
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          imageName=$(grep "^FROM" Dockerfile | cut -d' ' -f2 | cut -d':' -f1)
+          imageVersion=$(grep "^FROM" Dockerfile | cut -d':' -f2 | cut -d'@' -f1)
+
+          if [[ "${imageName}" == "ghcr.io/ministryofjustice/analytical-platform-"* ]]; then
+            imageRepository=${imageName#ghcr.io/}
+
+            downloadTrivyignore=$(gh api "repos/${imageRepository}/contents/.trivyignore?ref=${imageVersion}" 2>/dev/null || true)
+            export downloadTrivyignore
+
+            downloadTrivyignoreStatus=$(jq -r '.status' <<< "${downloadTrivyignore}")
+            export downloadTrivyignoreStatus
+
+            if [[ "${downloadTrivyignoreStatus}" == "null" ]]; then
+              echo ".trivyignore found, writing to file"
+              jq -r '.content' <<< "${downloadTrivyignore}" | base64 --decode > .base-trivyignore
+
+              if [[ ! -f .trivyignore ]]; then
+                echo ".trivyignore not found, creating new file"
+                mv .base-trivyignore .trivyignore
+              else
+                echo ".trivyignore already exists, merging with existing file"
+                cat .base-trivyignore >> .trivyignore
+              fi
+
+            elif [[ "${downloadTrivyignoreStatus}" == "404" ]]; then
+              echo ".trivyignore not found" # It's OK if we don't find one, it means one might not exist
+            else
+              echo "Error downloading .trivyignore"
+              exit 1
+            fi
+          else
+            echo "Image is not an Analytical Platform image, skipping .trivyignore download"
+          fi
+
       - name: Scan
         id: scan
         uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 # v0.30.0
