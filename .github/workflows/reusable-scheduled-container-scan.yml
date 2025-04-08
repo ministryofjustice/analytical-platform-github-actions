@@ -31,26 +31,51 @@ jobs:
 
           echo "latest-release-tag=$latestReleaseTag" >>"${GITHUB_ENV}"
 
-      - name: Download .trivyignore
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ env.latest-release-tag }}
+
+      - name: Generate .trivyignore
         id: download_trivyignore
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          downloadTrivyignore=$(gh api "repos/${{ github.repository }}/contents/.trivyignore?ref=${{ env.latest-release-tag }}" 2>/dev/null || true)
-          export downloadTrivyignore
+          imageName=$(grep "^FROM" Dockerfile | cut -d' ' -f2 | cut -d':' -f1)
+          imageVersion=$(grep "^FROM" Dockerfile | cut -d':' -f2 | cut -d'@' -f1)
 
-          downloadTrivyignoreStatus=$(jq -r '.status' <<< "${downloadTrivyignore}")
-          export downloadTrivyignoreStatus
+          if [[ "${imageName}" == "ghcr.io/ministryofjustice/analytical-platform-"* ]]; then
+            imageRepository=${imageName#ghcr.io/}
 
-          if [[ "${downloadTrivyignoreStatus}" == "null" ]]; then
-            echo ".trivyignore found, writing to file"
-            jq -r '.content' <<< "${downloadTrivyignore}" | base64 --decode > .trivyignore
-          elif [[ "${downloadTrivyignoreStatus}" == "404" ]]; then
-            echo ".trivyignore not found" # It's OK if we don't find one, it means one might not exist
+            downloadTrivyignore=$(gh api "repos/${imageRepository}/contents/.trivyignore?ref=${imageVersion}" 2>/dev/null || true)
+            export downloadTrivyignore
+
+            downloadTrivyignoreStatus=$(jq -r '.status' <<< "${downloadTrivyignore}")
+            export downloadTrivyignoreStatus
+
+            if [[ "${downloadTrivyignoreStatus}" == "null" ]]; then
+              echo ".trivyignore found, writing to file"
+              jq -r '.content' <<< "${downloadTrivyignore}" | base64 --decode > .base-trivyignore
+
+              if [[ ! -f .trivyignore ]]; then
+                echo ".trivyignore not found, creating new file"
+                mv .base-trivyignore .trivyignore
+              else
+                echo ".trivyignore already exists, merging with existing file"
+                cat .base-trivyignore >> .trivyignore
+              fi
+
+            elif [[ "${downloadTrivyignoreStatus}" == "404" ]]; then
+              echo ".trivyignore not found" # It's OK if we don't find one, it means one might not exist
+            else
+              echo "Error downloading .trivyignore"
+              exit 1
+            fi
           else
-            echo "Error downloading .trivyignore"
-            exit 1
+            echo "Image is not an Analytical Platform image, skipping .trivyignore download"
           fi
 
       - name: Scan
