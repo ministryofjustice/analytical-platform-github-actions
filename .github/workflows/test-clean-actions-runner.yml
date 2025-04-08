@@ -26,3 +26,5 @@ jobs:
       - name: Run clean-actions-runner
         id: clean_actions_runner
         uses: ./clean-actions-runner
+        with:
+          confirm: true
