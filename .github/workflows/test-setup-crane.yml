@@ -1,12 +1,12 @@
 ---
-name: 🧪 Test clean-actions-runner
+name: 🧪 Test setup-crane
 
 on:
   pull_request:
     branches:
       - main
     paths:
-      - clean-actions-runner/**
+      - setup-crane/**
 
 permissions: {}
 
@@ -23,8 +23,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run clean-actions-runner
-        id: clean_actions_runner
-        uses: ./clean-actions-runner
-        with:
-          confirm: true
+      - name: Run setup-crane
+        id: setup_crane
+        uses: ./setup-crane
+
+      - name: Test crane command
+        id: test_crane_command
+        run: |
+          crane version
