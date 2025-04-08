@@ -1,0 +1,28 @@
+---
+name: 🧪 Test clean-actions-runner
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - clean-actions-runner
+
+permissions: {}
+
+jobs:
+  default:
+    name: Default
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Run clean-actions-runner
+        id: clean_actions_runner
+        uses: ./clean-actions-runner
