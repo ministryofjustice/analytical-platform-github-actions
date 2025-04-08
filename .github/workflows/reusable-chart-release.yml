@@ -29,7 +29,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set Up crane
+      - name: Set Up Cosign
+        id: setup_cosign
+        uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3.8.1
+
+      - name: Set Up Crane
         id: setup_crane
         uses: ministryofjustice/analytical-platform-github-actions/setup-crane@8474c115b94f9e8c0b6ffda88a8ace111ebe7c33 # port-actions
 
@@ -74,16 +78,37 @@ jobs:
 
           echo "release-digest=${releaseDigest}" >>"${GITHUB_ENV}"
 
-      - name: Attest
-        id: attest
+      - name: Cosign
+        id: cosign
+        shell: bash
+        env:
+          CHART_NAME: ${{ inputs.chart-name }}
+          DIGEST: ${{ env.release-digest }}
+        run: |
+          cosign sign --yes "ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}@${DIGEST}"
+
+      - name: GitHub Attestation
+        id: github_attestation
         uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
         with:
           subject-name: ghcr.io/ministryofjustice/analytical-platform-charts/${{ inputs.chart-name }}
           subject-digest: ${{ env.release-digest }}
           push-to-registry: true
 
-      - name: GitHub Attestation Verify
-        id: gh_attestation_verify
+      - name: Cosign Verification
+        id: cosign_verification
+        shell: bash
+        env:
+          CHART_NAME: ${{ inputs.chart-name }}
+          DIGEST: ${{ env.release-digest }}
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp="https://github\.com/ministryofjustice/analytical-platform-github-actions/\.github/workflows/reusable-chart-release\.yml.+" \
+            "ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}@${DIGEST}"
+
+      - name: GitHub Attestation Verification
+        id: github_attestation_verification
         shell: bash
         env:
           CHART_NAME: ${{ inputs.chart-name }}

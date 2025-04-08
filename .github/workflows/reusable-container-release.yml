@@ -27,8 +27,8 @@ jobs:
         with:
           confirm: true
 
-      - name: Install cosign
-        id: install_cosign
+      - name: Set Up Cosign
+        id: setup_cosign
         uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3.8.1
 
       - name: Log in to GitHub Container Registry
@@ -46,8 +46,8 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
 
-      - name: Sign
-        id: sign
+      - name: Cosign
+        id: cosign
         shell: bash
         env:
           DIGEST: ${{ steps.build_and_push.outputs.digest }}
@@ -62,15 +62,15 @@ jobs:
           format: cyclonedx-json
           output-file: "sbom.cyclonedx.json"
 
-      - name: Attest
-        id: attest
+      - name: Github Attestation
+        id: github_attestation
         uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
         with:
           subject-name: ghcr.io/${{ github.repository }}
           subject-digest: ${{ steps.build_and_push.outputs.digest }}
           push-to-registry: true
 
-      - name: Attest SBOM
+      - name: GitHub Attestation SBOM
         id: attest_sbom
         uses: actions/attest-sbom@115c3be05ff3974bcbd596578934b3f9ce39bf68 # v2.2.0
         with:
@@ -79,8 +79,8 @@ jobs:
           sbom-path: sbom.cyclonedx.json
           push-to-registry: true
 
-      - name: cosign Verify
-        id: cosign_verify
+      - name: Cosign Verification
+        id: cosign_verification
         shell: bash
         env:
           DIGEST: ${{ steps.build_and_push.outputs.digest }}
@@ -90,8 +90,8 @@ jobs:
             --certificate-identity-regexp="https://github\.com/ministryofjustice/analytical-platform-github-actions/\.github/workflows/reusable-container-release\.yml.+" \
             "ghcr.io/${{ github.repository }}@${DIGEST}"
 
-      - name: GitHub Attestation Verify
-        id: gh_attestation_verify
+      - name: GitHub Attestation Verification
+        id: github_attestation_verification
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
