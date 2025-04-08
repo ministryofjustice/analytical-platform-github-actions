@@ -4,227 +4,248 @@ description: Removes packaged software from the Actions Runner to free up disk s
 
 inputs:
   confirm:
-    description: 'Confirm that you want to remove the software'
+    description: "Confirm that you want to remove the software"
     required: true
     default: false
   remove_opt_google:
-    description: 'Remove /opt/google'
+    description: "Remove /opt/google"
     required: true
     default: true
   remove_opt_hostedtoolcache:
-    description: 'Remove /opt/hostedtoolcache'
+    description: "Remove /opt/hostedtoolcache"
     required: true
     default: true
   remove_opt_microsoft:
-    description: 'Remove /opt/microsoft'
+    description: "Remove /opt/microsoft"
     required: true
     default: true
   remove_opt_pipx:
-    description: 'Remove /opt/pipx'
+    description: "Remove /opt/pipx"
     required: true
     default: true
   remove_usr_lib_firefox:
-    description: 'Remove /usr/lib/firefox'
+    description: "Remove /usr/lib/firefox"
     required: true
     default: true
   remove_usr_lib_google_cloud_sdk:
-    description: 'Remove /usr/lib/google-cloud-sdk'
+    description: "Remove /usr/lib/google-cloud-sdk"
     required: true
     default: true
   remove_usr_lib_heroku:
-    description: 'Remove /usr/lib/heroku'
+    description: "Remove /usr/lib/heroku"
     required: true
     default: true
   remove_usr_lib_llvm_13:
-    description: 'Remove /usr/lib/llvm-13'
+    description: "Remove /usr/lib/llvm-13"
     required: true
     default: true
   remove_usr_lib_llvm_14:
-    description: 'Remove /usr/lib/llvm-14'
+    description: "Remove /usr/lib/llvm-14"
     required: true
     default: true
   remove_usr_lib_llvm_15:
-    description: 'Remove /usr/lib/llvm-15'
+    description: "Remove /usr/lib/llvm-15"
     required: true
     default: true
   remove_usr_lib_mono:
-    description: 'Remove /usr/lib/mono'
+    description: "Remove /usr/lib/mono"
     required: true
     default: true
   remove_usr_local_julia:
-    description: 'Remove /usr/local/julia*'
+    description: "Remove /usr/local/julia*"
     required: true
     default: true
   remove_usr_local_lib_android:
-    description: 'Remove /usr/local/lib/android'
+    description: "Remove /usr/local/lib/android"
     required: true
     default: true
   remove_usr_local_lib_node_modules:
-    description: 'Remove /usr/local/lib/node_modules'
+    description: "Remove /usr/local/lib/node_modules"
     required: true
     default: true
   remove_usr_local_share_chromium:
-    description: 'Remove /usr/local/share/chromium'
+    description: "Remove /usr/local/share/chromium"
     required: true
     default: true
   remove_usr_local_share_powershell:
-    description: 'Remove /usr/local/share/powershell'
+    description: "Remove /usr/local/share/powershell"
     required: true
     default: true
   remove_usr_share_dotnet:
-    description: 'Remove /usr/share/dotnet'
+    description: "Remove /usr/share/dotnet"
     required: true
     default: true
   remove_usr_share_miniconda:
-    description: 'Remove /usr/share/miniconda'
+    description: "Remove /usr/share/miniconda"
     required: true
     default: true
   remove_usr_share_swift:
-    description: 'Remove /usr/share/swift'
+    description: "Remove /usr/share/swift"
     required: true
     default: true
 
 runs:
   using: composite
+  env:
+    CONFIRM: ${{ inputs.confirm }}
+    REMOVE_OPT_GOOGLE: ${{ inputs.remove_opt_google }}
+    REMOVE_OPT_HOSTEDTOOLCACHE: ${{ inputs.remove_opt_hostedtoolcache }}
+    REMOVE_OPT_MICROSOFT: ${{ inputs.remove_opt_microsoft }}
+    REMOVE_OPT_PIPX: ${{ inputs.remove_opt_pipx }}
+    REMOVE_USR_LIB_FIREFOX: ${{ inputs.remove_usr_lib_firefox }}
+    REMOVE_USR_LIB_GOOGLE_CLOUD_SDK: ${{ inputs.remove_usr_lib_google_cloud_sdk }}
+    REMOVE_USR_LIB_HEROKU: ${{ inputs.remove_usr_lib_heroku }}
+    REMOVE_USR_LIB_LLVM_13: ${{ inputs.remove_usr_lib_llvm_13 }}
+    REMOVE_USR_LIB_LLVM_14: ${{ inputs.remove_usr_lib_llvm_14 }}
+    REMOVE_USR_LIB_LLVM_15: ${{ inputs.remove_usr_lib_llvm_15 }}
+    REMOVE_USR_LIB_MONO: ${{ inputs.remove_usr_lib_mono }}
+    REMOVE_USR_LOCAL_JULIA: ${{ inputs.remove_usr_local_julia }}
+    REMOVE_USR_LOCAL_LIB_ANDROID: ${{ inputs.remove_usr_local_lib_android }}
+    REMOVE_USR_LOCAL_LIB_NODE_MODULES: ${{ inputs.remove_usr_local_lib_node_modules }}
+    REMOVE_USR_LOCAL_SHARE_CHROMIUM: ${{ inputs.remove_usr_local_share_chromium }}
+    REMOVE_USR_LOCAL_SHARE_POWERSHELL: ${{ inputs.remove_usr_local_share_powershell }}
+    REMOVE_USR_SHARE_DOTNET: ${{ inputs.remove_usr_share_dotnet }}
+    REMOVE_USR_SHARE_MINICONDA: ${{ inputs.remove_usr_share_miniconda }}
+    REMOVE_USR_SHARE_SWIFT: ${{ inputs.remove_usr_share_swift }}
   steps:
     - name: Run Cleanup
       id: run_cleanup
       shell: bash
       run: |
-        if [[ "${{ inputs.confirm }}" == "true" ]]; then
+        if [[ "${CONFIRM}" == "true" ]]; then
           echo "Confirmed"
         else
           echo "Not confirmed, to confirm set 'confirm: true'"
           exit 1
         fi
 
-        if [[ "${{ inputs.remove_opt_google }}" ]]; then
+        if [[ "${REMOVE_OPT_GOOGLE}" ]]; then
           echo "Removing /opt/google"
           sudo rm --force --recursive /opt/google
         else
           echo "Not removing /opt/google, to remove set 'remove_opt_google: true'"
         fi
 
-        if [[ "${{ inputs.remove_opt_hostedtoolcache }}" ]]; then
+        if [[ "${REMOVE_OPT_HOSTEDTOOLCACHE}" ]]; then
           echo "Removing /opt/hostedtoolcache"
           sudo rm --force --recursive /opt/hostedtoolcache
         else
           echo "Not removing /opt/hostedtoolcache, to remove set 'remove_opt_hostedtoolcache: true'"
         fi
 
-        if [[ "${{ inputs.remove_opt_microsoft }}" ]]; then
+        if [[ "${REMOVE_OPT_MICROSOFT}" ]]; then
           echo "Removing /opt/microsoft"
           sudo rm --force --recursive /opt/microsoft
         else
           echo "Not removing /opt/microsoft, to remove set 'remove_opt_microsoft: true'"
         fi
 
-        if [[ "${{ inputs.remove_opt_pipx }}" ]]; then
+        if [[ "${REMOVE_OPT_PIPX}" ]]; then
           echo "Removing /opt/pipx"
           sudo rm --force --recursive /opt/pipx
         else
           echo "Not removing /opt/pipx, to remove set 'remove_opt_pipx: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_lib_firefox }}" ]]; then
+        if [[ "${REMOVE_USR_LIB_FIREFOX}" ]]; then
           echo "Removing /usr/lib/firefox"
           sudo rm --force --recursive /usr/lib/firefox
         else
           echo "Not removing /usr/lib/firefox, to remove set 'remove_usr_lib_firefox: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_lib_google_cloud_sdk }}" ]]; then
+        if [[ "${REMOVE_USR_LIB_GOOGLE_CLOUD_SDK}" ]]; then
           echo "Removing /usr/lib/google-cloud-sdk"
           sudo rm --force --recursive /usr/lib/google-cloud-sdk
         else
           echo "Not removing /usr/lib/google-cloud-sdk, to remove set 'remove_usr_lib_google_cloud_sdk: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_lib_heroku }}" ]]; then
+        if [[ "${REMOVE_USR_LIB_HEROKU}" ]]; then
           echo "Removing /usr/lib/heroku"
           sudo rm --force --recursive /usr/lib/heroku
         else
           echo "Not removing /usr/lib/heroku, to remove set 'remove_usr_lib_heroku: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_lib_llvm_13 }}" ]]; then
+        if [[ "${REMOVE_USR_LIB_LLVM_13}" ]]; then
           echo "Removing /usr/lib/llvm-13"
           sudo rm --force --recursive /usr/lib/llvm-13
         else
           echo "Not removing /usr/lib/llvm-13, to remove set 'remove_usr_lib_llvm_13: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_lib_llvm_14 }}" ]]; then
+        if [[ "${REMOVE_USR_LIB_LLVM_14}" ]]; then
           echo "Removing /usr/lib/llvm-14"
           sudo rm --force --recursive /usr/lib/llvm-14
         else
           echo "Not removing /usr/lib/llvm-14, to remove set 'remove_usr_lib_llvm_14: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_lib_llvm_15 }}" ]]; then
+        if [[ "${REMOVE_USR_LIB_LLVM_15}" ]]; then
           echo "Removing /usr/lib/llvm-15"
           sudo rm --force --recursive /usr/lib/llvm-15
         else
           echo "Not removing /usr/lib/llvm-15, to remove set 'remove_usr_lib_llvm_15: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_lib_mono }}" ]]; then
+        if [[ "${REMOVE_USR_LIB_MONO}" ]]; then
           echo "Removing /usr/lib/mono"
           sudo rm --force --recursive /usr/lib/mono
         else
           echo "Not removing /usr/lib/mono, to remove set 'remove_usr_lib_mono: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_local_julia }}" ]]; then
+        if [[ "${REMOVE_USR_LOCAL_JULIA}" ]]; then
           echo "Removing /usr/local/julia*"
           sudo rm --force --recursive /usr/local/julia*
         else
           echo "Not removing /usr/local/julia*, to remove set 'remove_usr_local_julia: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_local_lib_android }}" ]]; then
+        if [[ "${REMOVE_USR_LOCAL_LIB_ANDROID}" ]]; then
           echo "Removing /usr/local/lib/android"
           sudo rm --force --recursive /usr/local/lib/android
         else
           echo "Not removing /usr/local/lib/android, to remove set 'remove_usr_local_lib_android: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_local_lib_node_modules }}" ]]; then
+        if [[ "${REMOVE_USR_LOCAL_LIB_NODE_MODULES}" ]]; then
           echo "Removing /usr/local/lib/node_modules"
           sudo rm --force --recursive /usr/local/lib/node_modules
         else
           echo "Not removing /usr/local/lib/node_modules, to remove set 'remove_usr_local_lib_node_modules: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_local_share_chromium }}" ]]; then
+        if [[ "${REMOVE_USR_LOCAL_SHARE_CHROMIUM}" ]]; then
           echo "Removing /usr/local/share/chromium"
           sudo rm --force --recursive /usr/local/share/chromium
         else
           echo "Not removing /usr/local/share/chromium, to remove set 'remove_usr_local_share_chromium: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_local_share_powershell }}" ]]; then
+        if [[ "${REMOVE_USR_LOCAL_SHARE_POWERSHELL}" ]]; then
           echo "Removing /usr/local/share/powershell"
           sudo rm --force --recursive /usr/local/share/powershell
         else
           echo "Not removing /usr/local/share/powershell, to remove set 'remove_usr_local_share_powershell: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_share_dotnet }}" ]]; then
+        if [[ "${REMOVE_USR_SHARE_DOTNET}" ]]; then
           echo "Removing /usr/share/dotnet"
           sudo rm --force --recursive /usr/share/dotnet
         else
           echo "Not removing /usr/share/dotnet, to remove set 'remove_usr_share_dotnet: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_share_miniconda }}" ]]; then
+        if [[ "${REMOVE_USR_SHARE_MINICONDA}" ]]; then
           echo "Removing /usr/share/miniconda"
           sudo rm --force --recursive /usr/share/miniconda
         else
           echo "Not removing /usr/share/miniconda, to remove set 'remove_usr_share_miniconda: true'"
         fi
 
-        if [[ "${{ inputs.remove_usr_share_swift }}" ]]; then
+        if [[ "${REMOVE_USR_SHARE_SWIFT}" ]]; then
           echo "Removing /usr/share/swift"
           sudo rm --force --recursive /usr/share/swift
         else
