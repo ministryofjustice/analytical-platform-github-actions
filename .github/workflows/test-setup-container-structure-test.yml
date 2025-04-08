@@ -30,4 +30,4 @@ jobs:
       - name: Test container-structure-test command
         id: test_container_structure_test_command
         run: |
-          container-structure-test --version
+          container-structure-test version

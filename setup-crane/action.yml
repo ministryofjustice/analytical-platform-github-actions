@@ -16,7 +16,7 @@ runs:
         VERSION: ${{ inputs.version }}
       run: | # zizmor: ignore[github-env] we need to the binary to the path
         if [[ "$(uname --machine)" == "x86_64" ]]; then
-          export architecture="amd64"
+          export architecture="x86_64"
         elif [[ "$(uname --machine)" == "aarch64" ]]; then
           export architecture="arm64"
         else
