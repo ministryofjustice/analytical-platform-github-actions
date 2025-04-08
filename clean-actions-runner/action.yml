@@ -86,31 +86,31 @@ inputs:
 
 runs:
   using: composite
-  env:
-    CONFIRM: ${{ inputs.confirm }}
-    REMOVE_OPT_GOOGLE: ${{ inputs.remove_opt_google }}
-    REMOVE_OPT_HOSTEDTOOLCACHE: ${{ inputs.remove_opt_hostedtoolcache }}
-    REMOVE_OPT_MICROSOFT: ${{ inputs.remove_opt_microsoft }}
-    REMOVE_OPT_PIPX: ${{ inputs.remove_opt_pipx }}
-    REMOVE_USR_LIB_FIREFOX: ${{ inputs.remove_usr_lib_firefox }}
-    REMOVE_USR_LIB_GOOGLE_CLOUD_SDK: ${{ inputs.remove_usr_lib_google_cloud_sdk }}
-    REMOVE_USR_LIB_HEROKU: ${{ inputs.remove_usr_lib_heroku }}
-    REMOVE_USR_LIB_LLVM_13: ${{ inputs.remove_usr_lib_llvm_13 }}
-    REMOVE_USR_LIB_LLVM_14: ${{ inputs.remove_usr_lib_llvm_14 }}
-    REMOVE_USR_LIB_LLVM_15: ${{ inputs.remove_usr_lib_llvm_15 }}
-    REMOVE_USR_LIB_MONO: ${{ inputs.remove_usr_lib_mono }}
-    REMOVE_USR_LOCAL_JULIA: ${{ inputs.remove_usr_local_julia }}
-    REMOVE_USR_LOCAL_LIB_ANDROID: ${{ inputs.remove_usr_local_lib_android }}
-    REMOVE_USR_LOCAL_LIB_NODE_MODULES: ${{ inputs.remove_usr_local_lib_node_modules }}
-    REMOVE_USR_LOCAL_SHARE_CHROMIUM: ${{ inputs.remove_usr_local_share_chromium }}
-    REMOVE_USR_LOCAL_SHARE_POWERSHELL: ${{ inputs.remove_usr_local_share_powershell }}
-    REMOVE_USR_SHARE_DOTNET: ${{ inputs.remove_usr_share_dotnet }}
-    REMOVE_USR_SHARE_MINICONDA: ${{ inputs.remove_usr_share_miniconda }}
-    REMOVE_USR_SHARE_SWIFT: ${{ inputs.remove_usr_share_swift }}
   steps:
     - name: Run Cleanup
       id: run_cleanup
       shell: bash
+      env:
+        CONFIRM: ${{ inputs.confirm }}
+        REMOVE_OPT_GOOGLE: ${{ inputs.remove_opt_google }}
+        REMOVE_OPT_HOSTEDTOOLCACHE: ${{ inputs.remove_opt_hostedtoolcache }}
+        REMOVE_OPT_MICROSOFT: ${{ inputs.remove_opt_microsoft }}
+        REMOVE_OPT_PIPX: ${{ inputs.remove_opt_pipx }}
+        REMOVE_USR_LIB_FIREFOX: ${{ inputs.remove_usr_lib_firefox }}
+        REMOVE_USR_LIB_GOOGLE_CLOUD_SDK: ${{ inputs.remove_usr_lib_google_cloud_sdk }}
+        REMOVE_USR_LIB_HEROKU: ${{ inputs.remove_usr_lib_heroku }}
+        REMOVE_USR_LIB_LLVM_13: ${{ inputs.remove_usr_lib_llvm_13 }}
+        REMOVE_USR_LIB_LLVM_14: ${{ inputs.remove_usr_lib_llvm_14 }}
+        REMOVE_USR_LIB_LLVM_15: ${{ inputs.remove_usr_lib_llvm_15 }}
+        REMOVE_USR_LIB_MONO: ${{ inputs.remove_usr_lib_mono }}
+        REMOVE_USR_LOCAL_JULIA: ${{ inputs.remove_usr_local_julia }}
+        REMOVE_USR_LOCAL_LIB_ANDROID: ${{ inputs.remove_usr_local_lib_android }}
+        REMOVE_USR_LOCAL_LIB_NODE_MODULES: ${{ inputs.remove_usr_local_lib_node_modules }}
+        REMOVE_USR_LOCAL_SHARE_CHROMIUM: ${{ inputs.remove_usr_local_share_chromium }}
+        REMOVE_USR_LOCAL_SHARE_POWERSHELL: ${{ inputs.remove_usr_local_share_powershell }}
+        REMOVE_USR_SHARE_DOTNET: ${{ inputs.remove_usr_share_dotnet }}
+        REMOVE_USR_SHARE_MINICONDA: ${{ inputs.remove_usr_share_miniconda }}
+        REMOVE_USR_SHARE_SWIFT: ${{ inputs.remove_usr_share_swift }}
       run: |
         if [[ "${CONFIRM}" == "true" ]]; then
           echo "Confirmed"
