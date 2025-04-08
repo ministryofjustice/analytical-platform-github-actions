@@ -2,10 +2,10 @@
 on:
   workflow_call:
     inputs:
-      chart_name:
+      chart-name:
         type: string
         required: true
-      chart_path:
+      chart-path:
         type: string
         required: false
         default: chart
@@ -43,7 +43,7 @@ jobs:
         id: package_chart
         shell: bash
         env:
-          CHART_PATH: ${{ inputs.chart_path }}
+          CHART_PATH: ${{ inputs.chart-path }}
         run: |
           helm package "${CHART_PATH}" --destination .helm-deploy
 
@@ -51,7 +51,7 @@ jobs:
         id: push_chart
         shell: bash
         env:
-          CHART_NAME: ${{ inputs.chart_name }}
+          CHART_NAME: ${{ inputs.chart-name }}
           REF_NAME: ${{ github.ref_name }}
         run: |
           helm push ".helm-deploy/${CHART_NAME}-${REF_NAME}.tgz" oci://ghcr.io/ministryofjustice/analytical-platform-charts

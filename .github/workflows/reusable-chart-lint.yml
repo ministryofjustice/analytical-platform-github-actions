@@ -2,7 +2,7 @@
 on:
   workflow_call:
     inputs:
-      chart_path:
+      chart-path:
         type: string
         required: false
         default: chart
@@ -34,6 +34,6 @@ jobs:
         id: lint_chart
         shell: bash
         env:
-          CHART_PATH: ${{ inputs.chart_path }}
+          CHART_PATH: ${{ inputs.chart-path }}
         run: |
           ct lint --charts "${CHART_PATH}"
