@@ -17,7 +17,9 @@ jobs:
     name: Chart Release
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      actions: read
+      attestations: write
+      contents: write
       id-token: write
       packages: write
     steps:
@@ -55,3 +57,24 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
         run: |
           helm push ".helm-deploy/${CHART_NAME}-${REF_NAME}.tgz" oci://ghcr.io/ministryofjustice/analytical-platform-charts
+
+      - name: Attest
+        id: attest
+        uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
+        with:
+          subject-name: ghcr.io/ministryofjustice/analytical-platform-charts/${{ inputs.chart-name }}
+          subject-digest: ${{ steps.push_chart.outputs.digest }}
+          push-to-registry: true
+
+      - name: GitHub Attestation Verify
+        id: gh_attestation_verify
+        shell: bash
+        env:
+          CHART_NAME: ${{ inputs.chart-name }}
+          GH_TOKEN: ${{ github.token }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          gh attestation verify \
+            "oci://ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}" \
+            --repo ${{ github.repository }} \
+            --signer-workflow ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-chart-release.yml
