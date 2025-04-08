@@ -69,7 +69,7 @@ jobs:
           CHART_NAME: ${{ inputs.chart-name }}
           REF_NAME: ${{ github.ref_name }}
         run: |
-          releaseDigest=$(crane digest ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}:${REF_NAME})
+          releaseDigest=$(crane digest "ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}:${REF_NAME}")
           export releaseDigest
 
           echo "release-digest=${releaseDigest}" >>"${GITHUB_ENV}"
