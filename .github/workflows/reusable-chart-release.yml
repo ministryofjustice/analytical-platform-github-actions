@@ -50,5 +50,8 @@ jobs:
       - name: Push Chart
         id: push_chart
         shell: bash
+        env:
+          CHART_NAME: ${{ inputs.chart_name }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          helm push .helm-deploy/${{ inputs.chart_name }}-${{ github.ref_name }}.tgz oci://ghcr.io/ministryofjustice/analytical-platform-charts
+          helm push ".helm-deploy/${CHART_NAME}-${REF_NAME}.tgz" oci://ghcr.io/ministryofjustice/analytical-platform-charts
