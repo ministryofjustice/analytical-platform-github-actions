@@ -2,13 +2,13 @@
 
 This action installs Google's [Container Structure Test](https://github.com/GoogleContainerTools/container-structure-test) tool.
 
-> [!warning]
+> [!WARNING]
 > Container Structure Test is not an officially supported Google project, and is currently in maintainence mode.
 > However, releases are still being created.
 
 ## Usage
 
-> [!warning]
+> [!WARNING]
 > This action only works with versions of Container Structure Test that are released to GitHub.
 > v1.17.0 onwards.
 
