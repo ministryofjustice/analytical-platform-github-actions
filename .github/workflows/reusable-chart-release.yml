@@ -29,6 +29,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set Up crane
+        id: setup_crane
+        uses: ministryofjustice/analytical-platform-github-actions/setup-crane@8474c115b94f9e8c0b6ffda88a8ace111ebe7c33 # port-actions
+
       - name: Set Up Helm
         id: setup_helm
         uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4.3.0
@@ -58,12 +62,24 @@ jobs:
         run: |
           helm push ".helm-deploy/${CHART_NAME}-${REF_NAME}.tgz" oci://ghcr.io/ministryofjustice/analytical-platform-charts
 
+      - name: Get Release Digest
+        id: get_release_digest
+        shell: bash
+        env:
+          CHART_NAME: ${{ inputs.chart-name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          releaseDigest=$(crane digest ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}:${REF_NAME})
+          export releaseDigest
+
+          echo "release-digest=${releaseDigest}" >>"${GITHUB_ENV}"
+
       - name: Attest
         id: attest
         uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
         with:
           subject-name: ghcr.io/ministryofjustice/analytical-platform-charts/${{ inputs.chart-name }}
-          subject-digest: ${{ steps.push_chart.outputs.digest }}
+          subject-digest: ${{ env.release-digest }}
           push-to-registry: true
 
       - name: GitHub Attestation Verify
@@ -75,6 +91,6 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
         run: |
           gh attestation verify \
-            "oci://ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}" \
+            "oci://ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}:${REF_NAME}" \
             --repo ${{ github.repository }} \
             --signer-workflow ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-chart-release.yml
