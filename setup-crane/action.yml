@@ -1,0 +1,42 @@
+---
+name: Set Up crane
+description: This action installs Google's [crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane)
+
+inputs:
+  version:
+    description: Version of crane to install
+    required: false
+    default: "latest"
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: | # zizmor: ignore[github-env] we need to the binary to the path
+        if [[ "$(uname --machine)" == "x86_64" ]]; then
+          export architecture="amd64"
+        elif [[ "$(uname --machine)" == "aarch64" ]]; then
+          export architecture="arm64"
+        else
+          echo "Unsupported architecture: $(uname --machine)"
+          exit 1
+        fi
+
+        if [[ "${VERSION}" == "latest" ]]; then
+          export version="$(curl --silent https://api.github.com/repos/google/go-containerregistry/releases/latest | jq -r '.tag_name')"
+        else
+          export version="${VERSION}"
+        fi
+
+        mkdir --parents "${GITHUB_WORKSPACE}/.crane"
+
+        curl --fail-with-body --location --silent "https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_Linux_${architecture}.tar.gz" \
+          --output "/tmp/go-containerregistry_Linux_${architecture}.tar.gz"
+
+        tar --extract --file "/tmp/go-containerregistry_Linux_${architecture}.tar.gz" --directory "${GITHUB_WORKSPACE}/.crane" crane
+
+        chmod +x "${GITHUB_WORKSPACE}/.crane/crane"
+
+        echo "${GITHUB_WORKSPACE}/.crane" >>"${GITHUB_PATH}"
