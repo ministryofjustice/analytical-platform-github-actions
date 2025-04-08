@@ -1,6 +1,6 @@
 # Set Up Container Structure Test
 
-This action installs Google's [Container Structure Test](https://github.com/GoogleContainerTools/container-structure-test) tool.
+This action installs Google's [Container Structure Test](https://github.com/GoogleContainerTools/container-structure-test)
 
 > [!WARNING]
 > Container Structure Test is not an officially supported Google project, and is currently in maintainence mode.

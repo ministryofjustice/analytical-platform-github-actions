@@ -1,86 +1,86 @@
 ---
 name: Clean Actions Runner
-description: Removes packaged software from the Actions Runner to free up disk space
+description: This action frees up space on a GitHub-hosted runner
 
 inputs:
   confirm:
-    description: "Confirm that you want to remove the software"
+    description: Confirm that you want to remove the software
     required: true
     default: false
   remove_opt_google:
-    description: "Remove /opt/google"
+    description: Remove /opt/google
     required: true
     default: true
   remove_opt_hostedtoolcache:
-    description: "Remove /opt/hostedtoolcache"
+    description: Remove /opt/hostedtoolcache
     required: true
     default: true
   remove_opt_microsoft:
-    description: "Remove /opt/microsoft"
+    description: Remove /opt/microsoft
     required: true
     default: true
   remove_opt_pipx:
-    description: "Remove /opt/pipx"
+    description: Remove /opt/pipx
     required: true
     default: true
   remove_usr_lib_firefox:
-    description: "Remove /usr/lib/firefox"
+    description: Remove /usr/lib/firefox
     required: true
     default: true
   remove_usr_lib_google_cloud_sdk:
-    description: "Remove /usr/lib/google-cloud-sdk"
+    description: Remove /usr/lib/google-cloud-sdk
     required: true
     default: true
   remove_usr_lib_heroku:
-    description: "Remove /usr/lib/heroku"
+    description: Remove /usr/lib/heroku
     required: true
     default: true
   remove_usr_lib_llvm_13:
-    description: "Remove /usr/lib/llvm-13"
+    description: Remove /usr/lib/llvm-13
     required: true
     default: true
   remove_usr_lib_llvm_14:
-    description: "Remove /usr/lib/llvm-14"
+    description: Remove /usr/lib/llvm-14
     required: true
     default: true
   remove_usr_lib_llvm_15:
-    description: "Remove /usr/lib/llvm-15"
+    description: Remove /usr/lib/llvm-15
     required: true
     default: true
   remove_usr_lib_mono:
-    description: "Remove /usr/lib/mono"
+    description: Remove /usr/lib/mono
     required: true
     default: true
   remove_usr_local_julia:
-    description: "Remove /usr/local/julia*"
+    description: Remove /usr/local/julia*
     required: true
     default: true
   remove_usr_local_lib_android:
-    description: "Remove /usr/local/lib/android"
+    description: Remove /usr/local/lib/android
     required: true
     default: true
   remove_usr_local_lib_node_modules:
-    description: "Remove /usr/local/lib/node_modules"
+    description: Remove /usr/local/lib/node_modules
     required: true
     default: true
   remove_usr_local_share_chromium:
-    description: "Remove /usr/local/share/chromium"
+    description: Remove /usr/local/share/chromium
     required: true
     default: true
   remove_usr_local_share_powershell:
-    description: "Remove /usr/local/share/powershell"
+    description: Remove /usr/local/share/powershell
     required: true
     default: true
   remove_usr_share_dotnet:
-    description: "Remove /usr/share/dotnet"
+    description: Remove /usr/share/dotnet
     required: true
     default: true
   remove_usr_share_miniconda:
-    description: "Remove /usr/share/miniconda"
+    description: Remove /usr/share/miniconda
     required: true
     default: true
   remove_usr_share_swift:
-    description: "Remove /usr/share/swift"
+    description: Remove /usr/share/swift
     required: true
     default: true
 
