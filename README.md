@@ -10,6 +10,14 @@ This repository is a store for Analytical Platform's composite actions and reusa
 
 ## Reusable Workflows
 
+## Chart Lint
+
+Lints a Helm chart with [helm/chart-testing](https://github.com/helm/chart-testing)
+
+## Chart Release
+
+Pushes a chart to GHCR
+
 ### Container Release
 
 Builds and pushes a container GHCR, including attestations

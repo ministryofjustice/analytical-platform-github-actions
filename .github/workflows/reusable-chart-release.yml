@@ -1,0 +1,121 @@
+---
+on:
+  workflow_call:
+    inputs:
+      chart-name:
+        type: string
+        required: true
+      chart-path:
+        type: string
+        required: false
+        default: chart
+
+permissions: {}
+
+jobs:
+  chart-release:
+    name: Chart Release
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      attestations: write
+      contents: write
+      id-token: write
+      packages: write
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set Up Cosign
+        id: setup_cosign
+        uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3.8.1
+
+      - name: Set Up Crane
+        id: setup_crane
+        uses: ministryofjustice/analytical-platform-github-actions/setup-crane@main
+
+      - name: Set Up Helm
+        id: setup_helm
+        uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4.3.0
+
+      - name: Log in to GitHub Container Registry
+        id: login_ghcr
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package Chart
+        id: package_chart
+        shell: bash
+        env:
+          CHART_PATH: ${{ inputs.chart-path }}
+        run: |
+          helm package "${CHART_PATH}" --destination .helm-deploy
+
+      - name: Push Chart
+        id: push_chart
+        shell: bash
+        env:
+          CHART_NAME: ${{ inputs.chart-name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          helm push ".helm-deploy/${CHART_NAME}-${REF_NAME}.tgz" oci://ghcr.io/ministryofjustice/analytical-platform-charts
+
+      - name: Get Release Digest
+        id: get_release_digest
+        shell: bash
+        env:
+          CHART_NAME: ${{ inputs.chart-name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          releaseDigest=$(crane digest "ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}:${REF_NAME}")
+          export releaseDigest
+
+          echo "release-digest=${releaseDigest}" >>"${GITHUB_ENV}"
+
+      - name: Cosign
+        id: cosign
+        shell: bash
+        env:
+          CHART_NAME: ${{ inputs.chart-name }}
+          DIGEST: ${{ env.release-digest }}
+        run: |
+          cosign sign --yes "ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}@${DIGEST}"
+
+      - name: GitHub Attestation
+        id: github_attestation
+        uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
+        with:
+          subject-name: ghcr.io/ministryofjustice/analytical-platform-charts/${{ inputs.chart-name }}
+          subject-digest: ${{ env.release-digest }}
+          push-to-registry: true
+
+      - name: Cosign Verification
+        id: cosign_verification
+        shell: bash
+        env:
+          CHART_NAME: ${{ inputs.chart-name }}
+          DIGEST: ${{ env.release-digest }}
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp="https://github\.com/ministryofjustice/analytical-platform-github-actions/\.github/workflows/reusable-chart-release\.yml.+" \
+            "ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}@${DIGEST}"
+
+      - name: GitHub Attestation Verification
+        id: github_attestation_verification
+        shell: bash
+        env:
+          CHART_NAME: ${{ inputs.chart-name }}
+          GH_TOKEN: ${{ github.token }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          gh attestation verify \
+            "oci://ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}:${REF_NAME}" \
+            --repo ${{ github.repository }} \
+            --signer-workflow ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-chart-release.yml
