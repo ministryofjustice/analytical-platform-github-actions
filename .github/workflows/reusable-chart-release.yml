@@ -35,7 +35,7 @@ jobs:
 
       - name: Set Up Crane
         id: setup_crane
-        uses: ministryofjustice/analytical-platform-github-actions/setup-crane@8474c115b94f9e8c0b6ffda88a8ace111ebe7c33 # port-actions
+        uses: ministryofjustice/analytical-platform-github-actions/setup-crane@main
 
       - name: Set Up Helm
         id: setup_helm
