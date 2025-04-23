@@ -34,7 +34,6 @@ jobs:
 ### Configuring Super-Linter Settings
 
 ```yaml
-
 ---
 jobs:
   super-linter:

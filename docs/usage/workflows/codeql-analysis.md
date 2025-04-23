@@ -39,7 +39,6 @@ jobs:
 > You must include `actions`
 
 ```yaml
-
 ---
 jobs:
   codeql-analysis:
