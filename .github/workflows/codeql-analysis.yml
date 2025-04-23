@@ -18,3 +18,5 @@ jobs:
       contents: read
       security-events: write
     uses: ./.github/workflows/reusable-codeql-analysis.yml
+    with:
+      languages: '["actions", "python", "javascript"]'
