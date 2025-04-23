@@ -1,0 +1,24 @@
+# Container Scan
+
+Builds and scans a container for vulnerabilities with [Trivy](https://github.com/aquasecurity/trivy) using [aquasecurity/trivy-action](https://github.com/aquasecurity/trivy-action)
+
+## Usage
+
+```yaml
+---
+name: 🩻 Container Scan
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  container-scan:
+    name: Container Scan
+    permissions:
+      contents: read
+    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-container-scan.yml@main
+```

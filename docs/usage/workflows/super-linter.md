@@ -1,0 +1,51 @@
+# Super-Linter
+
+Runs [super-linter/super-linter](https://github.com/super-linter/super-linter)
+
+## Inputs
+
+|          Input           |   Type   | Required | Default |
+| :----------------------: | :------: | :------: | :-----: |
+| `super-linter-variables` | `string` | `false`  | `"{}"`  |
+
+## Usage
+
+```yaml
+---
+name: 🦝 Super Linter
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  super-linter:
+    name: Super Linter
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-super-linter.yml@main
+```
+
+### Configuring Super-Linter Settings
+
+```yaml
+---
+jobs:
+  super-linter:
+    name: Super Linter
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-super-linter.yml@main
+    with:
+      super-linter-variables: |
+        {
+          VALIDATE_X: false
+        }
+```
