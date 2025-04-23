@@ -30,40 +30,40 @@ See [`setup-crane`](/setup-crane/README.md)
 
 ### Chart Lint
 
-Lints a Helm chart with [helm/chart-testing](https://github.com/helm/chart-testing)
+See [`chart-lint`](/docs/usage/workflows/chart-lint.md)
 
 ### Chart Release
 
-Pushes a chart to GHCR
+See [`chart-release`](/docs/usage/workflows/chart-release.md)
 
 ### CodeQL Analysis
 
-Runs [github/codeql-action/analyze](https://github.com/github/codeql-action/tree/main/analyze)
+See [`chart-release`](/docs/usage/workflows/chart-release.md)
 
 ### Container Release
 
-Builds and pushes a container GHCR, including attestations
+See [`container-release`](/docs/usage/workflows/container-release.md)
 
 ### Container Scan
 
-Builds and scans a container for vulnerabilities with [Trivy](https://github.com/aquasecurity/trivy) using [aquasecurity/trivy-action](https://github.com/aquasecurity/trivy-action)
+See [`container-scan`](/docs/usage/workflows/container-scan.md)
 
 ### Container Test
 
-Builds and tests a container with [Container Structure Test](https://github.com/GoogleContainerTools/container-structure-test)
+See [`container-test`](/docs/usage/workflows/container-test.md)
 
 ### Dependency Review
 
-Runs [actions/dependency-review-action](https://github.com/actions/dependency-review-action)
+See [`dependency-review`](/docs/usage/workflows/dependency-review.md)
 
 ### Scheduled Container Scan
 
-Pulls latest release of a container and scans for vulnerabilities with [Trivy](https://github.com/aquasecurity/trivy) using [aquasecurity/trivy-action](https://github.com/aquasecurity/trivy-action)
+See [`scheduled-container-scan`](/docs/usage/workflows/scheduled-container-scan.md)
 
 ### Super Linter
 
-Runs [super-linter/super-linter](https://github.com/super-linter/super-linter)
+See [`super-linter`](/docs/usage/workflows/super-linter.md)
 
 ### Zizmor
 
-Runs [woodruffw/zizmor](https://github.com/woodruffw/zizmor)
+See [`zizmor`](/docs/usage/workflows/zizmor.md)
