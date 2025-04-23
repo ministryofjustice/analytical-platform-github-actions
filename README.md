@@ -8,15 +8,37 @@
 
 This repository is a store for Analytical Platform's composite actions and reusable workflows.
 
+---
+
+## Composite Actions
+
+### Clean Actions Runner
+
+See [`clean-actions-runner`](/clean-actions-runner/README.md)
+
+### Set Up Container Structure Test
+
+See [`setup-container-structure-test`](/setup-container-structure-test/README.md)
+
+### Set Up Crane
+
+See [`setup-crane`](/setup-crane/README.md)
+
+---
+
 ## Reusable Workflows
 
-## Chart Lint
+### Chart Lint
 
 Lints a Helm chart with [helm/chart-testing](https://github.com/helm/chart-testing)
 
-## Chart Release
+### Chart Release
 
 Pushes a chart to GHCR
+
+### CodeQL Analysis
+
+Runs [github/codeql-action/analyze](https://github.com/github/codeql-action/tree/main/analyze)
 
 ### Container Release
 
