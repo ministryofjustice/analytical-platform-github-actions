@@ -1,6 +1,11 @@
 ---
 on:
   workflow_call:
+    inputs:
+      scan-severity:
+        type: string
+        required: false
+        default: HIGH,CRITICAL
     secrets:
       cve-scan-slack-webhook-url:
         required: true
