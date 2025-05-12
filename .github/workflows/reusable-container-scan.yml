@@ -1,6 +1,11 @@
 ---
 on:
   workflow_call:
+    inputs:
+      scan-severity:
+        type: string
+        required: false
+        default: HIGH,CRITICAL
 
 permissions: {}
 
@@ -79,6 +84,6 @@ jobs:
           TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db:1
         with:
           image-ref: ${{ github.sha }}
-          severity: HIGH,CRITICAL
+          severity: ${{ inputs.scan-severity }}
           ignore-unfixed: true
           exit-code: 1
