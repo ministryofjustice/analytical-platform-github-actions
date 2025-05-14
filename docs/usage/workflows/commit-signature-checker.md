@@ -1,3 +1,9 @@
+# Commit Signature Checker
+
+Checks for unverified commits on Pull Requests
+
+## Usage
+
 ```yaml
 ---
 name: ✍️ Commit Signature Checker
