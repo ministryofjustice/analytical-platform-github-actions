@@ -6,7 +6,7 @@ runs:
   using: composite
   steps:
     - name: Check for unverified commits
-      id: check_unverified_commits 
+      id: check_unverified_commits
       uses: actions/github-script@v7
       with:
         script: |

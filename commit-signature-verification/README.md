@@ -1,4 +1,3 @@
 # Commit Signature Verification
 
-This action checks PRs for unverified commits. 
-
+This action checks PRs for unverified commits.
