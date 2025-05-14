@@ -8,6 +8,9 @@ jobs:
   commit-signature-checker:
     name: Commit Signature Checker
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout
         id: checkout
