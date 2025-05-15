@@ -1,0 +1,43 @@
+---
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  commit-signature-checker:
+    name: Commit Signature Checker
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Check for unverified commits
+        id: check_unverified_commits
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const { data: commits } = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            const unverified = commits.filter(commit => !commit.commit.verification.verified);
+
+            if (unverified.length > 0) {
+              const message = `⚠️ This pull request contains ${unverified.length} commit(s) without verified signatures. Please sign your commits. More information on this is available [here](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits).`;
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: message,
+              });
+            }
