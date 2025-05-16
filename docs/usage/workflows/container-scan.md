@@ -2,6 +2,12 @@
 
 Builds and scans a container for vulnerabilities with [Trivy](https://github.com/aquasecurity/trivy) using [aquasecurity/trivy-action](https://github.com/aquasecurity/trivy-action)
 
+## Inputs
+
+|      Input      |   Type   | Required |     Default     |
+| :-------------: | :------: | :------: | :-------------: |
+| `scan-severity` | `string` | `false`  | `HIGH,CRITICAL` |
+
 ## Usage
 
 ```yaml
