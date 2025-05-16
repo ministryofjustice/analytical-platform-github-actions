@@ -46,6 +46,7 @@ jobs:
     with:
       super-linter-variables: |
         {
-          VALIDATE_X: false
+          "VALIDATE_X": false,
+          "KEY": "value"
         }
 ```
