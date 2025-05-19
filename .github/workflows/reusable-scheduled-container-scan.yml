@@ -1,6 +1,11 @@
 ---
 on:
   workflow_call:
+    inputs:
+      scan-severity:
+        type: string
+        required: false
+        default: HIGH,CRITICAL
     secrets:
       cve-scan-slack-webhook-url:
         required: true
@@ -86,7 +91,7 @@ jobs:
           TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db:1
         with:
           image-ref: ghcr.io/${{ github.repository }}:${{ env.latest-release-tag }}
-          severity: HIGH,CRITICAL
+          severity: ${{ inputs.scan-severity }}
           ignore-unfixed: true
           exit-code: 1
 
