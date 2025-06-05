@@ -40,4 +40,7 @@ jobs:
                 issue_number: prNumber,
                 body: message,
               });
+
+              // Fail the workflow
+              throw new Error(`Found ${unverified.length} unverified commit(s).`);
             }
