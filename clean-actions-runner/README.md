@@ -10,32 +10,6 @@ Standard Github-hosted runner are only guaranteed 14GB of SSD storage ([source](
 > [!TIP]
 > This action is useful when working with large container images
 
-## Usage
-
-> [!NOTE]
-> To run the cleanup operation, you will need to explicitly set `confirm: true`
-
-```yaml
-- name: Clean Actions Runner
-  id: clean_actions_runner
-  uses: ministryofjustice/analytical-platform-github-actions/clean-actions-runner@main
-  with:
-    confirm: true
-```
-
-To retain a specific piece of software, set its input to `false`, for example:
-
-```yaml
-- name: Clean Actions Runner
-  id: clean_actions_runner
-  uses: ministryofjustice/analytical-platform-github-actions/clean-actions-runner@main
-  with:
-    confirm: true
-    remove_opt_hostedtoolcache: false
-```
-
-Using the default options should reclaim about 29GB
-
 ## Inputs
 
 | Input                               | Default | Required | Description                                  |
@@ -60,3 +34,29 @@ Using the default options should reclaim about 29GB
 | `remove_usr_share_dotnet`           | `true`  |  `true`  | Remove `/usr/share/dotnet` (1.6GB)           |
 | `remove_usr_share_miniconda`        | `true`  |  `true`  | Remove `/usr/share/miniconda` (658MB)        |
 | `remove_usr_share_swift`            | `true`  |  `true`  | Remove `/usr/share/swift` (2.6GB)            |
+
+## Usage
+
+> [!NOTE]
+> To run the cleanup operation, you will need to explicitly set `confirm: true`
+
+```yaml
+- name: Clean Actions Runner
+  id: clean_actions_runner
+  uses: ministryofjustice/analytical-platform-github-actions/clean-actions-runner@<commit SHA> # <version>
+  with:
+    confirm: true
+```
+
+To retain a specific piece of software, set its input to `false`, for example:
+
+```yaml
+- name: Clean Actions Runner
+  id: clean_actions_runner
+  uses: ministryofjustice/analytical-platform-github-actions/clean-actions-runner@<commit SHA> # <version>
+  with:
+    confirm: true
+    remove_opt_hostedtoolcache: false
+```
+
+Using the default options should reclaim about 29GB

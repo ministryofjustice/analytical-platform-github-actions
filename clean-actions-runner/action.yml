@@ -84,6 +84,8 @@ inputs:
     required: true
     default: true
 
+outputs: {}
+
 runs:
   using: composite
   steps:

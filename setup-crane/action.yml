@@ -8,10 +8,14 @@ inputs:
     required: false
     default: "latest"
 
+outputs: {}
+
 runs:
-  using: "composite"
+  using: composite
   steps:
-    - shell: bash
+    - name: Install crane
+      id: install_crane
+      shell: bash
       env:
         VERSION: ${{ inputs.version }}
       run: | # zizmor: ignore[github-env] we need to the binary to the path

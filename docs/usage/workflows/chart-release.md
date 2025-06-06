@@ -31,7 +31,7 @@ jobs:
       contents: write
       id-token: write
       packages: write
-    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-chart-release.yml@main
+    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-chart-release.yml@<commit SHA> # <version>
     with:
       chart-name: example-chart-name
 ```

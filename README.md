@@ -38,7 +38,11 @@ See [`chart-release`](/docs/usage/workflows/chart-release.md)
 
 ### CodeQL Analysis
 
-See [`chart-release`](/docs/usage/workflows/chart-release.md)
+See [`codeql-analysis`](/docs/usage/workflows/codeql-analysis.md)
+
+### Commit Signature Checker
+
+See [`commit-signature-checker`](/docs/usage/workflows/commit-signature-checker.md)
 
 ### Container Release
 
