@@ -1,6 +1,6 @@
 # Commit Signature Checker
 
-Checks for unverified commits on Pull Requests
+Checks for unverified commits on pull requests
 
 ## Usage
 
