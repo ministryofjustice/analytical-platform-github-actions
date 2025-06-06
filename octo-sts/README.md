@@ -36,3 +36,13 @@ jobs:
   },
 ]
 ```
+
+## Notes
+
+The JavaScript in this action ([`request-token.js`](/octo-sts/request-token.js) and [`revoke-token.js`](/octo-sts/revoke-token.js)) are modified versions of [`index.js`](https://github.com/octo-sts/action/blob/v1.0.0/index.js) and [`post.js`](https://github.com/octo-sts/action/blob/v1.0.0/post.js) respectively.
+
+These modifications are:
+
+ - Write token to a temporary file instead of `${GITHUB_OUTPUT}`
+
+ - Linting
