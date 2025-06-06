@@ -6,6 +6,12 @@ This action installs Google's [Container Structure Test](https://github.com/Goog
 > Container Structure Test is not an officially supported Google project, and is currently in maintainence mode.
 > However, releases are still being created.
 
+## Inputs
+
+| Input     | Type     | Required | Default  |
+| --------- | -------- | -------- | -------- |
+| `version` | `string` | false    | `latest` |
+
 ## Usage
 
 > [!WARNING]
@@ -13,22 +19,14 @@ This action installs Google's [Container Structure Test](https://github.com/Goog
 > v1.17.0 onwards.
 
 ```yaml
-jobs:
-  container-structure-test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@v4
+- name: Set Up Container Structure Test
+  id: setup_container_structure_test
+  uses: ministryofjustice/analytical-platform-github-actions/setup-container-structure-test@<commit SHA> # <version>
 
-      - name: Set Up Container Structure Test
-        id: setup_container_structure_test
-        uses: ministryofjustice/analytical-platform-github-actions/setup-container-structure-test@main
-
-      - name: Run Container Structure Test
-        id: run_container_structure_test
-        run: |
-          container-structure-test ...
+- name: Run Container Structure Test
+  id: run_container_structure_test
+  run: |
+    container-structure-test ...
 ```
 
 Specifying a version
@@ -36,7 +34,7 @@ Specifying a version
 ```yaml
 - name: Set Up Container Structure Test
   id: setup_container_structure_test
-  uses: ministryofjustice/analytical-platform-github-actions/setup-container-structure-test@main
+  uses: ministryofjustice/analytical-platform-github-actions/setup-container-structure-test@<commit SHA> # <version>
   with:
     version: v1.17.0
 ```
