@@ -18,17 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Required permission for enable OIDC
     steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@<commit SHA> # <semantic version>
-        with:
-          persist-credentials: false
-
       - name: Octo STS
         id: octo_sts
-        uses: ministryofjustice/analytical-platform-github-actions/octo-sts@<commit SHA> # <semantic version>
+        uses: ministryofjustice/analytical-platform-github-actions/octo-sts@<commit SHA> # <version>
 ```
 
 ## Octo STS Configuration File
