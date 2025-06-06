@@ -1,10 +1,6 @@
 ---
 name: Octo STS
 
-branding:
-  color: purple
-  icon: git-merge
-
 inputs:
   octo-sts-configuration:
     description: The path to the Octo STS configuration file
