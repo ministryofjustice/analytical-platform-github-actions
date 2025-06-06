@@ -33,7 +33,7 @@ jobs:
     "scope": "<GitHub organisation>/<GitHub repository>", // Source repository to clone e.g. ministryofjustice/private-repository
     "identity": "<STS identity>", // STS identity e.g. ministryofjustice-example-repository
     "branch": "<branch or tag>", // Branch or tag of source repository to checkout when cloning
-  },
+  }
 ]
 ```
 
