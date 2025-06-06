@@ -24,5 +24,5 @@ jobs:
       contents: write
       id-token: write
       packages: write
-    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-container-release.yml@main
+    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-container-release.yml@<commit SHA> # <version>
 ```

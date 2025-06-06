@@ -20,5 +20,5 @@ jobs:
     name: Container Test
     permissions:
       contents: read
-    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-container-test.yml@main
+    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-container-test.yml@<commit SHA> # <version>
 ```

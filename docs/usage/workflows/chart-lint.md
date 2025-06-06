@@ -26,5 +26,5 @@ jobs:
     name: Chart Lint
     permissions:
       contents: read
-    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-chart-lint.yml@main
+    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-chart-lint.yml@<commit SHA> # <version>
 ```
