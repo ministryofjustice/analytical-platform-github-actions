@@ -4,6 +4,9 @@ Runs [ossf/scorecard-action](https://github.com/ossf/scorecard-action)
 
 ## Usage
 
+> [!NOTE]
+> This workflow only works with public repositories
+
 ```yaml
 ---
 name: 🛡️ OpenSSF Scorecard
