@@ -60,6 +60,10 @@ See [`container-test`](/docs/usage/workflows/container-test.md)
 
 See [`dependency-review`](/docs/usage/workflows/dependency-review.md)
 
+### OpenSSF Scorecard
+
+See [`openssf-scorecard`](/docs/usage/workflows/openssf-scorecard.md)
+
 ### Scheduled Container Scan
 
 See [`scheduled-container-scan`](/docs/usage/workflows/scheduled-container-scan.md)
