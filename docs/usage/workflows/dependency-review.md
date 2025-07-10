@@ -23,5 +23,6 @@ jobs:
     name: Dependency Review
     permissions:
       contents: read
+      pull-requests: write
     uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-dependency-review.yml@<commit SHA> # <version>
 ```
