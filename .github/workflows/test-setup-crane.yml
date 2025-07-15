@@ -11,32 +11,16 @@ on:
 permissions: {}
 
 jobs:
-  default:
-    name: Default
+  test:
+    name: Test (${{ matrix.version }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          persist-credentials: false
-
-      - name: Run setup-crane
-        id: setup_crane
-        uses: ./setup-crane
-
-      - name: Test crane command
-        id: test_crane_command
-        run: |
-          crane version
-
-  specify-version:
-    name: Specify Version
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    strategy:
+      matrix:
+        version:
+          - latest # default
+          - v0.20.6 # specific version
     steps:
       - name: Checkout
         id: checkout
@@ -48,7 +32,7 @@ jobs:
         id: setup_crane
         uses: ./setup-crane
         with:
-          version: v0.20.3
+          version: ${{ matrix.version }}
 
       - name: Test crane command
         id: test_crane_command
