@@ -3,7 +3,7 @@ name: Set Up Container Structure Test
 description: This action installs Google's [Container Structure Test](https://github.com/GoogleContainerTools/container-structure-test)
 
 inputs:
-  github_token:
+  github-token:
     description: GitHub token for authentication
     required: false
     default: ${{ github.token }}
@@ -21,7 +21,7 @@ runs:
       id: install_container_structure_test
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github_token }}
+        GH_TOKEN: ${{ inputs.github-token }}
         REPOSITORY: GoogleContainerTools/container-structure-test
         VERSION: ${{ inputs.version }}
       run: | # zizmor: ignore[github-env] we need to the binary to the path
