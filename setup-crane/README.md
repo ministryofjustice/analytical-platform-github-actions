@@ -4,9 +4,10 @@ This action installs Google's [crane](https://github.com/google/go-containerregi
 
 ## Inputs
 
-| Input     | Type     | Required | Default  |
-| --------- | -------- | -------- | -------- |
-| `version` | `string` | false    | `latest` |
+| Input          | Type     | Required | Default               |
+| -------------- | -------- | -------- | --------------------- |
+| `github-token` | `string` | false    | `${{ github.token }}` |
+| `version`      | `string` | false    | `latest`              |
 
 ## Usage
 

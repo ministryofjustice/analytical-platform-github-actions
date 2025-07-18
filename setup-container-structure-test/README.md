@@ -8,9 +8,10 @@ This action installs Google's [Container Structure Test](https://github.com/Goog
 
 ## Inputs
 
-| Input     | Type     | Required | Default  |
-| --------- | -------- | -------- | -------- |
-| `version` | `string` | false    | `latest` |
+| Input          | Type     | Required | Default               |
+| -------------- | -------- | -------- | --------------------- |
+| `github-token` | `string` | false    | `${{ github.token }}` |
+| `version`      | `string` | false    | `latest`              |
 
 ## Usage
 
