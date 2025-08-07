@@ -103,7 +103,6 @@ jobs:
           export pullRequestUrl
           echo "pullRequestUrl=${pullRequestUrl}" >>"${GITHUB_ENV}"
 
-
       - name: Close previous pull request
         if: env.changed == 'true' && env.previousPullRequest != ''
         env:
