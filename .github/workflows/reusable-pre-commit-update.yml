@@ -56,7 +56,7 @@ jobs:
           echo "branchName=${branchName}" >>"${GITHUB_ENV}"
 
           gh api \
-            --method POST /repos/${{ github.repository }}/git/refs \
+            --method POST "/repos/${{ github.repository }}/git/refs" \
             --raw-field ref="refs/heads/${branchName}" \
             --raw-field sha=$(git rev-parse HEAD)
 
