@@ -64,6 +64,10 @@ See [`dependency-review`](/docs/usage/workflows/dependency-review.md)
 
 See [`openssf-scorecard`](/docs/usage/workflows/openssf-scorecard.md)
 
+### pre-commit Update
+
+See [`pre-commit-update`](/docs/usage/workflows/pre-commit-update.md)
+
 ### Scheduled Container Scan
 
 See [`scheduled-container-scan`](/docs/usage/workflows/scheduled-container-scan.md)
