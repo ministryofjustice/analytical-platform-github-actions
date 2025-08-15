@@ -2,6 +2,12 @@
 
 Release a container to GitHub Container Registry, including Cosign and GitHub Attestation
 
+## Inputs
+
+|         Input          |  Type  | Required | Default |
+| :--------------------: | :----: | :------: | :-----: |
+| `clean-actions-runner` | `bool` | `false`  | `true`  |
+
 ## Usage
 
 ```yaml

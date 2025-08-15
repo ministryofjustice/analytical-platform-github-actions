@@ -2,6 +2,12 @@
 
 Builds and tests a container with [Container Structure Test](https://github.com/GoogleContainerTools/container-structure-test)
 
+## Inputs
+
+|         Input          |  Type  | Required | Default |
+| :--------------------: | :----: | :------: | :-----: |
+| `clean-actions-runner` | `bool` | `false`  | `true`  |
+
 ## Usage
 
 ```yaml

@@ -2,6 +2,10 @@
 on:
   workflow_call:
     inputs:
+      clean-actions-runner:
+        type: boolean
+        required: false
+        default: true
       scan-severity:
         type: string
         required: false
@@ -30,6 +34,7 @@ jobs:
           persist-credentials: false
 
       - name: Clean Actions Runner
+        if: inputs.clean-actions-runner == true
         id: clean_actions_runner
         uses: ministryofjustice/analytical-platform-github-actions/clean-actions-runner@main
         with:
