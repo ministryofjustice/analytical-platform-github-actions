@@ -4,9 +4,10 @@ Builds and scans a container for vulnerabilities with [Trivy](https://github.com
 
 ## Inputs
 
-|      Input      |   Type   | Required |     Default     |
-| :-------------: | :------: | :------: | :-------------: |
-| `scan-severity` | `string` | `false`  | `HIGH,CRITICAL` |
+|         Input          |   Type   | Required |     Default     |
+| :--------------------: | :------: | :------: | :-------------: |
+| `clean-actions-runner` |  `bool`  | `false`  |     `true`      |
+|    `scan-severity`     | `string` | `false`  | `HIGH,CRITICAL` |
 
 ## Usage
 
