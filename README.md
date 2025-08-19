@@ -12,10 +12,6 @@ This repository is a store for Analytical Platform's composite actions and reusa
 
 ## Composite Actions
 
-### Clean Actions Runner
-
-See [`clean-actions-runner`](/clean-actions-runner/README.md)
-
 ### Set Up Container Structure Test
 
 See [`setup-container-structure-test`](/setup-container-structure-test/README.md)
