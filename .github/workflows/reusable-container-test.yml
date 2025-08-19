@@ -10,8 +10,8 @@ on:
 permissions: {}
 
 jobs:
-  container-scan:
-    name: Container Scan
+  container-test:
+    name: Container Test
     runs-on: ubuntu-latest
     permissions:
       contents: read
