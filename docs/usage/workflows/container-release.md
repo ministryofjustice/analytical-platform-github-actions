@@ -4,9 +4,10 @@ Release a container to GitHub Container Registry, including Cosign and GitHub At
 
 ## Inputs
 
-|         Input          |  Type  | Required | Default |
-| :--------------------: | :----: | :------: | :-----: |
-| `clean-actions-runner` | `bool` | `false`  | `true`  |
+|         Input          |   Type   | Required |   Default    |
+| :--------------------: | :------: | :------: | :----------: |
+| `clean-actions-runner` |  `bool`  | `false`  |    `true`    |
+|    `container-file`    | `string` | `false`  | `Dockerfile` |
 
 ## Usage
 

@@ -4,9 +4,11 @@ Builds and tests a container with [Container Structure Test](https://github.com/
 
 ## Inputs
 
-|         Input          |  Type  | Required | Default |
-| :--------------------: | :----: | :------: | :-----: |
-| `clean-actions-runner` | `bool` | `false`  | `true`  |
+|         Input          |   Type   | Required |               Default               |
+| :--------------------: | :------: | :------: | :---------------------------------: |
+| `clean-actions-runner` |  `bool`  | `false`  |               `true`                |
+|  `configuration-file`  | `string` | `false`  | `test/container-structure-test.yml` |
+|    `container-file`    | `string` | `false`  |            `Dockerfile`             |
 
 ## Usage
 
