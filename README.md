@@ -6,15 +6,7 @@
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/ministryofjustice/analytical-platform-github-actions)
 
-This repository is a store for Analytical Platform's composite actions and reusable workflows.
-
----
-
-## Composite Actions
-
-### Set Up Container Structure Test
-
-See [`setup-container-structure-test`](/setup-container-structure-test/README.md)
+This repository is a store for Analytical Platform's reusable workflows.
 
 ---
 
