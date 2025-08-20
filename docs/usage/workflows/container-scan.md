@@ -7,6 +7,7 @@ Builds and scans a container for vulnerabilities with [Trivy](https://github.com
 |         Input          |   Type   | Required |     Default     |
 | :--------------------: | :------: | :------: | :-------------: |
 | `clean-actions-runner` |  `bool`  | `false`  |     `true`      |
+|    `container-file`    | `string` | `false`  |  `Dockerfile`   |
 |    `scan-severity`     | `string` | `false`  | `HIGH,CRITICAL` |
 
 ## Usage

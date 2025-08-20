@@ -6,6 +6,10 @@ on:
         type: boolean
         required: false
         default: true
+      container-file:
+        type: string
+        required: false
+        default: Dockerfile
       scan-severity:
         type: string
         required: false
@@ -45,6 +49,7 @@ jobs:
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: .
+          file: ${{ inputs.container-file }}
           push: false
           tags: ${{ github.sha }}
 
@@ -53,9 +58,10 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONTAINER_FILE: ${{ inputs.container-file }}
         run: |
-          imageName=$(grep "^FROM" Dockerfile | cut -d' ' -f2 | cut -d':' -f1)
-          imageVersion=$(grep "^FROM" Dockerfile | cut -d':' -f2 | cut -d'@' -f1)
+          imageName=$(grep "^FROM" "${CONTAINER_FILE}" | cut -d' ' -f2 | cut -d':' -f1)
+          imageVersion=$(grep "^FROM" "${CONTAINER_FILE}" | cut -d':' -f2 | cut -d'@' -f1)
 
           if [[ "${imageName}" == "ghcr.io/ministryofjustice/analytical-platform-"* ]]; then
             imageRepository=${imageName#ghcr.io/}
