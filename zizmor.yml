@@ -1,6 +1,0 @@
----
-rules:
-  unpinned-uses:
-    config:
-      policies:
-        ministryofjustice/analytical-platform-github-actions/*: ref-pin
