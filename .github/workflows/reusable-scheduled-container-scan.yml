@@ -105,6 +105,7 @@ jobs:
           image-ref: ghcr.io/${{ github.repository }}:${{ env.latest-release-tag }}
           severity: ${{ inputs.scan-severity }}
           ignore-unfixed: true
+          timeout: 15m
           exit-code: 1
 
       - name: Slack CVE Alert

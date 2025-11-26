@@ -104,4 +104,5 @@ jobs:
           image-ref: ${{ github.sha }}
           severity: ${{ inputs.scan-severity }}
           ignore-unfixed: true
+          timeout: 15m
           exit-code: 1
