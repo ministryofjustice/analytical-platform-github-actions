@@ -144,4 +144,3 @@ jobs:
             "failed_run": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
             "dockerfile": "${{ inputs.container-file }}"
           }
-
