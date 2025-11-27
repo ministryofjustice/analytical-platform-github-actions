@@ -122,25 +122,25 @@ jobs:
             --signer-workflow ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-container-release.yml
 
   check-release-status:
-  name: Check Release Status
-  runs-on: ubuntu-latest
-  needs: container-release
-  if: always()
-  steps:
-    - name: Send Slack notification on failure (analytical-platform only)
-      # Only run if container-release failed AND owner is analytical-platform
-      if: >
-        needs.container-release.result == 'failure' &&
-        github.repository_owner == 'analytical-platform'
-      uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
-      with:
-        webhook-type: incoming-webhook
-        webhook: ${{ secrets.ANALYTICAL_PLATFORM_CONTAINER_TEST_SLACK_WEBHOOK_URL}}
-        payload: |
-          {
-            "repository": "${{ github.repository }}",
-            "run_id": "${{ github.run_id }}",
-            "branch_tag": "${{ github.ref_name }}",
-            "failed_run": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-            "dockerfile": "${{ inputs.container-file }}"
-          }
+    name: Check Release Status
+    runs-on: ubuntu-latest
+    needs: container-release
+    if: always()
+    steps:
+      - name: Send Slack notification on failure (analytical-platform only)
+        # Only run if container-release failed AND owner is analytical-platform
+        if: >
+          needs.container-release.result == 'failure' &&
+          github.repository_owner == 'analytical-platform'
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook-type: incoming-webhook
+          webhook: ${{ secrets.ANALYTICAL_PLATFORM_CONTAINER_TEST_SLACK_WEBHOOK_URL }}
+          payload: |
+            {
+              "repository": "${{ github.repository }}",
+              "run_id": "${{ github.run_id }}",
+              "branch_tag": "${{ github.ref_name }}",
+              "failed_run": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "dockerfile": "${{ inputs.container-file }}"
+            }
