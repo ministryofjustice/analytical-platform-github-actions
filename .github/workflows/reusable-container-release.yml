@@ -10,6 +10,9 @@ on:
         type: string
         required: false
         default: Dockerfile
+    secrets:
+      analytical-platform-container-test-slack-webhook-url:
+        required: false
 
 permissions: {}
 
@@ -148,8 +151,5 @@ jobs:
           payload: |
             {
               "repository": "${{ github.repository }}",
-              "run_id": "${{ github.run_id }}",
-              "branch_tag": "${{ github.ref_name }}",
-              "failed_run": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "dockerfile": "${{ inputs.container-file }}"
+              "run_id": "${{ github.run_id }}"
             }
