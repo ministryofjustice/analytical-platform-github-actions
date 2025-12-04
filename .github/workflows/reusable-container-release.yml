@@ -142,9 +142,11 @@ jobs:
           echo "topics=$topics" >> "$GITHUB_OUTPUT"
 
       - name: Send Slack notification on failure (analytical-platform only)
+        id: slack_notification
         if: |
           needs.container-release.result == 'failure' &&
           contains(steps.repo_topics.outputs.topics, 'analytical-platform')
+        continue-on-error: true
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.analytical-platform-container-test-slack-webhook-url }}
@@ -165,12 +167,17 @@ jobs:
               ]
             }
 
-      - name: Debug Slack notification failure
-        if: failure() && steps.repo_topics.outputs.topics != ''
+      - name: Debug Slack notification
+        if: |
+          needs.container-release.result == 'failure' &&
+          contains(steps.repo_topics.outputs.topics, 'analytical-platform')
         run: |
-          echo "::group::Debug Information"
+          echo "::group::Slack Notification Debug"
+          echo "Slack notification step outcome: ${{ steps.slack_notification.outcome }}"
           echo "Container release result: ${{ needs.container-release.result }}"
           echo "Repository topics: ${{ steps.repo_topics.outputs.topics }}"
-          echo "Contains analytical-platform: ${{ contains(steps.repo_topics.outputs.topics, 'analytical-platform') }}"
           echo "Webhook configured: ${{ secrets.analytical-platform-container-test-slack-webhook-url != '' }}"
+          if [ "${{ steps.slack_notification.outcome }}" != "success" ]; then
+            echo "::warning::Slack notification did not succeed. Check webhook URL and Slack app configuration."
+          fi
           echo "::endgroup::"
