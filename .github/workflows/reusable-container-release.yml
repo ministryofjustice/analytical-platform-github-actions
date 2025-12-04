@@ -142,13 +142,12 @@ jobs:
           echo "topics=$topics" >> "$GITHUB_OUTPUT"
 
       - name: Send Slack notification on failure (analytical-platform only)
-        if: >
+        if: |
           needs.container-release.result == 'failure' &&
           contains(steps.repo_topics.outputs.topics, 'analytical-platform')
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
           webhook-type: incoming-webhook
-          # webhook: ${{ secrets.ANALYTICAL_PLATFORM_CONTAINER_TEST_SLACK_WEBHOOK_URL }}
           webhook: ${{ secrets.analytical-platform-container-test-slack-webhook-url }}
           payload: |
             {
