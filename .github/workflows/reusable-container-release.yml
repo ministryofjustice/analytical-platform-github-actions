@@ -12,7 +12,7 @@ on:
         default: Dockerfile
     secrets:
       analytical-platform-container-test-slack-webhook-url:
-      # ANALYTICAL_PLATFORM_CONTAINER_TEST_SLACK_WEBHOOK_URL:
+        # ANALYTICAL_PLATFORM_CONTAINER_TEST_SLACK_WEBHOOK_URL:
         required: false
 
 permissions: {}
