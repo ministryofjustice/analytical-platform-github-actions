@@ -146,11 +146,31 @@ jobs:
           needs.container-release.result == 'failure' &&
           contains(steps.repo_topics.outputs.topics, 'analytical-platform')
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.analytical-platform-container-test-slack-webhook-url }}
         with:
           webhook-type: incoming-webhook
           webhook: ${{ secrets.analytical-platform-container-test-slack-webhook-url }}
           payload: |
             {
-              "repository": "${{ github.repository }}",
-              "run_id": "${{ github.run_id }}"
+              "text": "Container release failed for ${{ github.repository }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Container Release Failed*\n*Repository:* ${{ github.repository }}\n*Workflow:* ${{ github.workflow }}\n*Run:* <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                  }
+                }
+              ]
             }
+      
+      - name: Debug Slack notification failure
+        if: failure() && steps.repo_topics.outputs.topics != ''
+        run: |
+          echo "::group::Debug Information"
+          echo "Container release result: ${{ needs.container-release.result }}"
+          echo "Repository topics: ${{ steps.repo_topics.outputs.topics }}"
+          echo "Contains analytical-platform: ${{ contains(steps.repo_topics.outputs.topics, 'analytical-platform') }}"
+          echo "Webhook configured: ${{ secrets.analytical-platform-container-test-slack-webhook-url != '' }}"
+          echo "::endgroup::"
