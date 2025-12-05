@@ -12,7 +12,6 @@ on:
         default: Dockerfile
     secrets:
       analytical-platform-container-test-slack-webhook-url:
-        # ANALYTICAL_PLATFORM_CONTAINER_TEST_SLACK_WEBHOOK_URL:
         required: false
 
 permissions: {}
@@ -142,69 +141,18 @@ jobs:
           echo "topics=$topics" >> "$GITHUB_OUTPUT"
 
       - name: Send Slack notification on failure (analytical-platform only)
-        id: slack_notification
         if: |
           needs.container-release.result == 'failure' &&
           contains(steps.repo_topics.outputs.topics, 'analytical-platform')
-        continue-on-error: true
-        shell: bash
-        run: |
-          response=$(curl -X POST \
-            -H 'Content-type: application/json' \
-            -w "\n%{http_code}" \
-            --data '{
-              "text": "Container release failed for ${{ github.repository }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Container Release Failed*\n*Repository:* ${{ github.repository }}\n*Workflow:* ${{ github.workflow }}\n*Run:* <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
-                  }
-                }
-              ]
-            }' \
-            '${{ secrets.analytical-platform-container-test-slack-webhook-url }}')
-
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | head -n-1)
-
-          echo "HTTP Status: $http_code"
-
-          if [ "$http_code" != "200" ]; then
-            case "$http_code" in
-              404)
-                echo "::error::Slack webhook returned 404 - The webhook URL is invalid, has been deleted, or the Slack app has been removed. Please regenerate the webhook in Slack and update the secret 'analytical-platform-container-test-slack-webhook-url'."
-                ;;
-              403)
-                echo "::error::Slack webhook returned 403 - Access forbidden. The webhook may have been revoked or the Slack workspace settings have changed."
-                ;;
-              410)
-                echo "::error::Slack webhook returned 410 - The webhook has been permanently disabled. Please create a new webhook in Slack."
-                ;;
-              500|503)
-                echo "::error::Slack webhook returned $http_code - Slack service error. This may be temporary."
-                ;;
-              *)
-                echo "::error::Slack webhook failed with HTTP $http_code. Response: ${body:0:500}"
-                ;;
-            esac
-            exit 1
-          else
-            echo "Slack notification sent successfully"
-          fi
-
-      - name: Debug Slack notification
-        if: |
-          needs.container-release.result == 'failure' &&
-          contains(steps.repo_topics.outputs.topics, 'analytical-platform')
-        run: |
-          echo "::group::Slack Notification Debug"
-          echo "Slack notification step outcome: ${{ steps.slack_notification.outcome }}"
-          echo "Container release result: ${{ needs.container-release.result }}"
-          echo "Repository topics: ${{ steps.repo_topics.outputs.topics }}"
-          echo "Webhook configured: ${{ secrets.analytical-platform-container-test-slack-webhook-url != '' }}"
-          if [ "${{ steps.slack_notification.outcome }}" != "success" ]; then
-            echo "::error::Slack notification failed. Check the step above for HTTP status and error details."
-          fi
-          echo "::endgroup::"
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook-type: incoming-webhook
+          webhook: ${{ secrets.analytical-platform-container-test-slack-webhook-url }}
+          payload: |
+            {
+              "repository": "${{ github.repository }}",
+              "run_id": "${{ github.run_id }}",
+              "branch_tag": "${{ github.ref_name }}",
+              "failed_run": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "dockerfile": "${{ inputs.container-file }}"
+            }
