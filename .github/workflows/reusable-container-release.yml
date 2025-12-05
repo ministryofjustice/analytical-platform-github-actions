@@ -165,13 +165,13 @@ jobs:
               ]
             }' \
             '${{ secrets.analytical-platform-container-test-slack-webhook-url }}')
-          
+
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n-1)
-          
+
           echo "HTTP Status: $http_code"
           echo "Response Body: $body"
-          
+
           if [ "$http_code" != "200" ]; then
             echo "::error::Slack webhook failed with HTTP $http_code: $body"
             exit 1
