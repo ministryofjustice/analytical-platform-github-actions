@@ -147,14 +147,12 @@ jobs:
           needs.container-release.result == 'failure' &&
           contains(steps.repo_topics.outputs.topics, 'analytical-platform')
         continue-on-error: true
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.analytical-platform-container-test-slack-webhook-url }}
-        with:
-          webhook-type: incoming-webhook
-          webhook: ${{ secrets.analytical-platform-container-test-slack-webhook-url }}
-          payload: |
-            {
+        shell: bash
+        run: |
+          response=$(curl -X POST \
+            -H 'Content-type: application/json' \
+            -w "\n%{http_code}" \
+            --data '{
               "text": "Container release failed for ${{ github.repository }}",
               "blocks": [
                 {
@@ -165,7 +163,19 @@ jobs:
                   }
                 }
               ]
-            }
+            }' \
+            '${{ secrets.analytical-platform-container-test-slack-webhook-url }}')
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response Body: $body"
+          
+          if [ "$http_code" != "200" ]; then
+            echo "::error::Slack webhook failed with HTTP $http_code: $body"
+            exit 1
+          fi
 
       - name: Debug Slack notification
         if: |
@@ -178,6 +188,6 @@ jobs:
           echo "Repository topics: ${{ steps.repo_topics.outputs.topics }}"
           echo "Webhook configured: ${{ secrets.analytical-platform-container-test-slack-webhook-url != '' }}"
           if [ "${{ steps.slack_notification.outcome }}" != "success" ]; then
-            echo "::warning::Slack notification did not succeed. Check webhook URL and Slack app configuration."
+            echo "::error::Slack notification failed. Check the step above for HTTP status and error details."
           fi
           echo "::endgroup::"
