@@ -170,11 +170,28 @@ jobs:
           body=$(echo "$response" | head -n-1)
 
           echo "HTTP Status: $http_code"
-          echo "Response Body: $body"
 
           if [ "$http_code" != "200" ]; then
-            echo "::error::Slack webhook failed with HTTP $http_code: $body"
+            case "$http_code" in
+              404)
+                echo "::error::Slack webhook returned 404 - The webhook URL is invalid, has been deleted, or the Slack app has been removed. Please regenerate the webhook in Slack and update the secret 'analytical-platform-container-test-slack-webhook-url'."
+                ;;
+              403)
+                echo "::error::Slack webhook returned 403 - Access forbidden. The webhook may have been revoked or the Slack workspace settings have changed."
+                ;;
+              410)
+                echo "::error::Slack webhook returned 410 - The webhook has been permanently disabled. Please create a new webhook in Slack."
+                ;;
+              500|503)
+                echo "::error::Slack webhook returned $http_code - Slack service error. This may be temporary."
+                ;;
+              *)
+                echo "::error::Slack webhook failed with HTTP $http_code. Response: ${body:0:500}"
+                ;;
+            esac
             exit 1
+          else
+            echo "Slack notification sent successfully"
           fi
 
       - name: Debug Slack notification
