@@ -33,5 +33,5 @@ jobs:
       packages: write
     uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-container-release.yml@<commit SHA> # <version>
     secrets:
-           analytical-platform-container-test-slack-webhook-url: ${{ secrets.ANALYTICAL_PLATFORM_CONTAINER_TEST_SLACK_WEBHOOK_URL }}
+      analytical-platform-container-test-slack-webhook-url: ${{ secrets.ANALYTICAL_PLATFORM_CONTAINER_TEST_SLACK_WEBHOOK_URL }}
 ```
