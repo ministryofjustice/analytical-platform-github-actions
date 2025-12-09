@@ -9,6 +9,9 @@ on:
         type: string
         required: false
         default: chart
+    secrets:
+      release-failure-webhook-url:
+        required: false
 
 permissions: {}
 
@@ -126,3 +129,16 @@ jobs:
             "oci://ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}:${REF_NAME}" \
             --repo ${{ github.repository }} \
             --signer-workflow ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-chart-release.yml
+
+      - name: Slack Release Alert
+        if: failure() && steps.scan.outcome == 'failure'
+        id: slack_release_alert
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook-type: incoming-webhook
+          webhook: ${{ secrets.release-failure-webhook-url }}
+          payload: |
+            {
+              "repository": "${{ github.repository }}",
+              "run_id": "${{ github.run_id }}"
+            }

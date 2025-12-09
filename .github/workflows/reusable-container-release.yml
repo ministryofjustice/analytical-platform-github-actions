@@ -11,7 +11,7 @@ on:
         required: false
         default: Dockerfile
     secrets:
-      analytical-platform-container-test-slack-webhook-url:
+      release-failure-webhook-url:
         required: false
 
 permissions: {}
@@ -124,30 +124,13 @@ jobs:
             --repo ${{ github.repository }} \
             --signer-workflow ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-container-release.yml
 
-  check-release-status:
-    name: Check Release Status
-    runs-on: ubuntu-latest
-    needs: container-release
-    if: always()
-    steps:
-      - name: Get repository topics
-        id: repo_topics
-        run: |
-          topics=$(curl -sSL \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ github.token }}" \
-            https://api.github.com/repos/${{ github.repository }}/topics \
-            | jq -r '.names | join(",")')
-          echo "topics=$topics" >> "$GITHUB_OUTPUT"
-
-      - name: Send Slack notification on failure (analytical-platform only)
-        if: |
-          needs.container-release.result == 'failure' &&
-          contains(steps.repo_topics.outputs.topics, 'analytical-platform')
+      - name: Slack Release Alert
+        if: failure() && steps.scan.outcome == 'failure'
+        id: slack_release_alert
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
           webhook-type: incoming-webhook
-          webhook: ${{ secrets.analytical-platform-container-test-slack-webhook-url }}
+          webhook: ${{ secrets.release-failure-webhook-url }}
           payload: |
             {
               "repository": "${{ github.repository }}",
