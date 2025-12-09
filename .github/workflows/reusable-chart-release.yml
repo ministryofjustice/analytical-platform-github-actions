@@ -131,7 +131,7 @@ jobs:
             --signer-workflow ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-chart-release.yml
 
       - name: Slack Release Alert
-        if: failure() && steps.scan.outcome == 'failure'
+        if: failure()
         id: slack_release_alert
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
