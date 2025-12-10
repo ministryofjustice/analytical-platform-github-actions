@@ -32,6 +32,8 @@ jobs:
       id-token: write
       packages: write
     uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-chart-release.yml@<commit SHA> # <version>
+    secrets:
+      release-failure-webhook-url: ${{ secrets.ANALYTICAL_PLATFORM_RELEASE_FAILURE_SLACK_WEBHOOK_URL }}
     with:
       chart-name: example-chart-name
 ```
