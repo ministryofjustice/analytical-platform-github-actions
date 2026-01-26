@@ -66,7 +66,7 @@ jobs:
           if [[ "${imageName}" == "ghcr.io/ministryofjustice/analytical-platform-"* ]]; then
             imageRepository=${imageName#ghcr.io/}
 
-            downloadTrivyignore=$(gh api "repos/${imageRepository}/contents/.trivyignore?ref=${imageVersion}" 2>/dev/null || true)
+            downloadTrivyignore=$(gh api "repos/${imageRepository}/contents/.trivyignore" 2>/dev/null || true)
             export downloadTrivyignore
 
             downloadTrivyignoreStatus=$(jq -r '.status' <<< "${downloadTrivyignore}")
