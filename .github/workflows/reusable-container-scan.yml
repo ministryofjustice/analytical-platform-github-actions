@@ -61,7 +61,6 @@ jobs:
           CONTAINER_FILE: ${{ inputs.container-file }}
         run: |
           imageName=$(grep "^FROM" "${CONTAINER_FILE}" | cut -d' ' -f2 | cut -d':' -f1)
-          imageVersion=$(grep "^FROM" "${CONTAINER_FILE}" | cut -d':' -f2 | cut -d'@' -f1)
 
           if [[ "${imageName}" == "ghcr.io/ministryofjustice/analytical-platform-"* ]]; then
             imageRepository=${imageName#ghcr.io/}
