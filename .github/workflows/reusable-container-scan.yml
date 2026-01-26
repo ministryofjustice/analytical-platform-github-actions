@@ -73,6 +73,9 @@ jobs:
             export downloadTrivyignoreStatus
 
             if [[ "${downloadTrivyignoreStatus}" == "null" ]]; then
+              echo "Using .trivyignore from ${imageRepository} (default branch)"
+              jq -r '.sha' <<< "${downloadTrivyignore}" || true
+              
               echo ".trivyignore found, writing to file"
               jq -r '.content' <<< "${downloadTrivyignore}" | base64 --decode > .base-trivyignore
 
