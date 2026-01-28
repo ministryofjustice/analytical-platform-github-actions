@@ -48,12 +48,12 @@ jobs:
 
           echo "latest-release-tag=$latestReleaseTag" >>"${GITHUB_ENV}"
 
-      - name: Checkout
+      - name: Checkout (use main for .trivyignore)
         id: checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-          ref: ${{ env.latest-release-tag }}
+          ref: main
 
       - name: Generate .trivyignore
         id: download_trivyignore
@@ -62,18 +62,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           imageName=$(grep "^FROM" Dockerfile | cut -d' ' -f2 | cut -d':' -f1)
-          imageVersion=$(grep "^FROM" Dockerfile | cut -d':' -f2 | cut -d'@' -f1)
 
           if [[ "${imageName}" == "ghcr.io/ministryofjustice/analytical-platform-"* ]]; then
             imageRepository=${imageName#ghcr.io/}
 
-            downloadTrivyignore=$(gh api "repos/${imageRepository}/contents/.trivyignore?ref=${imageVersion}" 2>/dev/null || true)
+            downloadTrivyignore=$(gh api "repos/${imageRepository}/contents/.trivyignore" 2>/dev/null || true)
             export downloadTrivyignore
 
             downloadTrivyignoreStatus=$(jq -r '.status' <<< "${downloadTrivyignore}")
             export downloadTrivyignoreStatus
 
             if [[ "${downloadTrivyignoreStatus}" == "null" ]]; then
+              echo "Using .trivyignore from ${imageRepository} (default branch)"
+              jq -r '.sha' <<< "${downloadTrivyignore}" || true
+
               echo ".trivyignore found, writing to file"
               jq -r '.content' <<< "${downloadTrivyignore}" | base64 --decode > .base-trivyignore
 
