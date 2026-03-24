@@ -103,7 +103,7 @@ jobs:
       - name: Slack CVE Alert
         if: failure() && steps.scan.outcome == 'failure'
         id: slack_cve_alert
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook-type: incoming-webhook
           webhook: ${{ secrets.cve-scan-slack-webhook-url }}
