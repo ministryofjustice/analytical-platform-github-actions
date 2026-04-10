@@ -63,7 +63,7 @@ jobs:
       - name: Commit changes
         if: env.changed == 'true'
         id: commit_changes
-        uses: ministryofjustice/analytical-platform-github-actions/.github/actions/commit-file@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f35f1 # <version>
+        uses: ministryofjustice/analytical-platform-github-actions/.github/actions/commit-file@4dfd0c023cf551052cefa0ffa6f53b7ecc3a45d5 # <version>
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           message: "🤖 Update .pre-commit-config.yaml"
