@@ -63,14 +63,13 @@ jobs:
       - name: Commit changes
         if: env.changed == 'true'
         id: commit_changes
-        uses: planetscale/ghcommit-action@25309d8005ac7c3bcd61d3fe19b69e0fe47dbdde # v0.2.20
+        uses: ministryofjustice/analytical-platform-github-actions/.github/actions/commit-file@4dfd0c023cf551052cefa0ffa6f53b7ecc3a45d5 # <version>
         with:
-          commit_message: "🤖 Update .pre-commit-config.yaml"
-          file_pattern: ".pre-commit-config.yaml"
-          repo: ${{ github.repository }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          message: "🤖 Update .pre-commit-config.yaml"
+          path: ".pre-commit-config.yaml"
           branch: ${{ env.branchName }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
 
       - name: Find previous pull request
         id: find_previous_pr
