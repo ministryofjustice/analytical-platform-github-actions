@@ -63,14 +63,30 @@ jobs:
       - name: Commit changes
         if: env.changed == 'true'
         id: commit_changes
-        uses: planetscale/ghcommit-action@25309d8005ac7c3bcd61d3fe19b69e0fe47dbdde # v0.2.20
-        with:
-          commit_message: "🤖 Update .pre-commit-config.yaml"
-          file_pattern: ".pre-commit-config.yaml"
-          repo: ${{ github.repository }}
-          branch: ${{ env.branchName }}
+        run: |
+          branch="${branchName}"
+          path=".pre-commit-config.yaml"
+          contents="$(base64 -w 0 "${path}")"
+
+          existing_sha="$(
+            gh api "repos/${GITHUB_REPOSITORY}/contents/${path}?ref=${branch}" \
+              --jq '.sha' 2>/dev/null || echo ""
+          )"
+
+          if [ -n "${existing_sha}" ]; then
+            gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/${path}" \
+              -f message="🤖 Update .pre-commit-config.yaml" \
+              -f content="${contents}" \
+              -f branch="${branch}" \
+              -f sha="${existing_sha}"
+          else
+            gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/${path}" \
+              -f message="🤖 Update .pre-commit-config.yaml" \
+              -f content="${contents}" \
+              -f branch="${branch}"
+          fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find previous pull request
         id: find_previous_pr
