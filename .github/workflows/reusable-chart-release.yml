@@ -9,6 +9,10 @@ on:
         type: string
         required: false
         default: chart
+      is-monorepo:
+        type: boolean
+        required: false
+        default: false
     secrets:
       release-failure-webhook-url:
         required: false
@@ -29,7 +33,7 @@ jobs:
       - name: Harden Runner
         if: github.event.repository.private == false
         id: harden_runner
-        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
         with:
           egress-policy: audit
 
@@ -39,9 +43,20 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Verify Monorepo Tag Format
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          CHART_NAME: ${{ inputs.chart-name }}
+        run: |
+          if [[ "${REF_NAME}" != "${CHART_NAME}/"* ]]; then
+            echo "ERROR: Monorepo tag '${REF_NAME}' is invalid."
+            echo "Tags must be prefixed with the chart name (e.g., '${CHART_NAME}/<version>')."
+            exit 1
+          fi
+
       - name: Set Up Cosign
         id: setup_cosign
-        uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
 
       - name: Set Up Crane
         id: setup_crane
@@ -53,7 +68,7 @@ jobs:
 
       - name: Log in to GitHub Container Registry
         id: login_ghcr
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -66,24 +81,25 @@ jobs:
           CHART_PATH: ${{ inputs.chart-path }}
         run: |
           helm package "${CHART_PATH}" --destination .helm-deploy
+          CHART_VERSION=$(grep -E '^version:' "${CHART_PATH}/Chart.yaml" | awk '{print $2}')
+          echo "CHART_VERSION=${CHART_VERSION}" >> "${GITHUB_ENV}"
 
       - name: Push Chart
         id: push_chart
         shell: bash
         env:
           CHART_NAME: ${{ inputs.chart-name }}
-          REF_NAME: ${{ github.ref_name }}
         run: |
-          helm push ".helm-deploy/${CHART_NAME}-${REF_NAME}.tgz" oci://ghcr.io/ministryofjustice/analytical-platform-charts
+          helm push ".helm-deploy/${CHART_NAME}-${CHART_VERSION}.tgz" oci://ghcr.io/ministryofjustice/analytical-platform-charts
 
       - name: Get Release Digest
         id: get_release_digest
         shell: bash
         env:
           CHART_NAME: ${{ inputs.chart-name }}
-          REF_NAME: ${{ github.ref_name }}
+          CHART_VERSION: ${{ env.CHART_VERSION }}
         run: |
-          releaseDigest=$(crane digest "ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}:${REF_NAME}")
+          releaseDigest=$(crane digest "ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}:${CHART_VERSION}")
           export releaseDigest
 
           echo "release-digest=${releaseDigest}" >>"${GITHUB_ENV}"
@@ -123,10 +139,10 @@ jobs:
         env:
           CHART_NAME: ${{ inputs.chart-name }}
           GH_TOKEN: ${{ github.token }}
-          REF_NAME: ${{ github.ref_name }}
+          CHART_VERSION: ${{ env.CHART_VERSION }}
         run: |
           gh attestation verify \
-            "oci://ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}:${REF_NAME}" \
+            "oci://ghcr.io/ministryofjustice/analytical-platform-charts/${CHART_NAME}:${CHART_VERSION}" \
             --repo ${{ github.repository }} \
             --signer-workflow ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-chart-release.yml
 
