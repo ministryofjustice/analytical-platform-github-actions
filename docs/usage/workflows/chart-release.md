@@ -4,10 +4,11 @@ Releases a Helm Chart to GitHub Container Registry, including Cosign and GitHub 
 
 ## Inputs
 
-|    Input     |   Type   | Required | Default |
-| :----------: | :------: | :------: | :-----: |
-| `chart-name` | `string` |  `true`  |         |
-| `chart-path` | `string` | `false`  | `chart` |
+|     Input     |   Type    | Required | Default |
+| :-----------: | :-------: | :------: | :-----: |
+| `chart-name`  | `string`  |  `true`  |         |
+| `chart-path`  | `string`  | `false`  | `chart` |
+| `is-monorepo` | `boolean` | `false`  | `false` |
 
 ## Usage
 
