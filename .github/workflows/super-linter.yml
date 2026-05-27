@@ -21,6 +21,5 @@ jobs:
       super-linter-variables: |
         {
           "VALIDATE_JSCPD": false,
-          "VALIDATE_GITHUB_ACTIONS_ZIZMOR": false,
           "VALIDATE_EDITORCONFIG": false
         }
