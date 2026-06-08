@@ -6,10 +6,6 @@ on:
         type: boolean
         required: false
         default: true
-      scan-severity:
-        type: string
-        required: false
-        default: HIGH,CRITICAL
     secrets:
       cve-scan-slack-webhook-url:
         required: true
@@ -48,60 +44,169 @@ jobs:
 
           echo "latest-release-tag=$latestReleaseTag" >>"${GITHUB_ENV}"
 
-      - name: Checkout (use main for .trivyignore)
+      - name: Checkout (use main for .grype.yml)
         id: checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
           ref: main
 
-      - name: Generate .trivyignore
-        id: download_trivyignore
+      - name: Generate .grype.yml Configuration
+        id: generate_grype_config
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           imageName=$(grep "^FROM" Dockerfile | cut -d' ' -f2 | cut -d':' -f1)
 
           if [[ "${imageName}" == "ghcr.io/ministryofjustice/analytical-platform-"* ]]; then
             imageRepository=${imageName#ghcr.io/}
+            BASE_GRYPE="base-grype.yml"
 
-            downloadTrivyignore=$(gh api "repos/${imageRepository}/contents/.trivyignore" 2>/dev/null || true)
-            export downloadTrivyignore
+            if ! curl --silent --show-error --fail --location \
+              "https://raw.githubusercontent.com/${imageRepository}/main/.grype.yml" \
+              --output "${BASE_GRYPE}"; then
+              echo "No base .grype.yml found in ${imageRepository}"
+              rm -f "${BASE_GRYPE}"
+            fi
 
-            downloadTrivyignoreStatus=$(jq -r '.status' <<< "${downloadTrivyignore}")
-            export downloadTrivyignoreStatus
-
-            if [[ "${downloadTrivyignoreStatus}" == "null" ]]; then
-              echo "Using .trivyignore from ${imageRepository} (default branch)"
-              jq -r '.sha' <<< "${downloadTrivyignore}" || true
-
-              echo ".trivyignore found, writing to file"
-              jq -r '.content' <<< "${downloadTrivyignore}" | base64 --decode > .base-trivyignore
-
-              if [[ ! -f .trivyignore ]]; then
-                echo ".trivyignore not found, creating new file"
-                mv .base-trivyignore .trivyignore
-              else
-                echo ".trivyignore already exists, merging with existing file"
-                cat .base-trivyignore >> .trivyignore
-              fi
-
-            elif [[ "${downloadTrivyignoreStatus}" == "404" ]]; then
-              echo ".trivyignore not found" # It's OK if we don't find one, it means one might not exist
+            if [[ -f "${BASE_GRYPE}" ]] && [[ -f .grype.yml ]]; then
+              echo "Merging base and local .grype.yml configurations"
+              # shellcheck disable=SC2016
+              yq eval-all 'explode(.) as $item ireduce ({}; . *+ $item)' "${BASE_GRYPE}" .grype.yml > merged-grype.yml
+              mv merged-grype.yml .grype.yml
+            elif [[ -f "${BASE_GRYPE}" ]]; then
+              mv "${BASE_GRYPE}" .grype.yml
+              echo "Using .grype.yml from base repository"
+            elif [[ -f .grype.yml ]]; then
+              echo "Using local .grype.yml configuration"
             else
-              echo "Error downloading .trivyignore"
-              exit 1
+              echo "No .grype.yml found, Grype will use default configuration"
             fi
           else
-            echo "Image is not an Analytical Platform image, skipping .trivyignore download"
+            echo "Image is not an Analytical Platform image, skipping .grype.yml download"
           fi
+
+      - name: Build Container Image
+        id: build
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          context: .
+          push: false
+          load: true
+          tags: ${{ github.sha }}
 
       - name: Scan
         id: scan
-        run: exit 0 # trivy-action step removed
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          image: ${{ github.sha }}
+          severity-cutoff: high
+          only-fixed: true
+          fail-build: false
+          output-format: sarif
+          output-file: result.sarif
+
+      - name: Process Scan Result
+        id: process_scan_result
+        shell: bash
+        run: |
+          print_findings() {
+            local title=$1
+            local findings=$2
+
+            if [[ -n "${findings}" ]]; then
+              echo "### ${title}"
+              echo ""
+              echo "${findings}"
+              echo ""
+            fi
+          }
+
+          SARIF=$(cat result.sarif)
+
+          # Build a lookup map of ruleId -> security-severity score from the rules section
+          RULE_SEVERITIES=$(echo "${SARIF}" | jq -c '
+            .runs[0].tool.driver.rules
+            | map({key: .id, value: (.properties["security-severity"] // "0" | tonumber)})
+            | from_entries
+          ')
+
+          CRITICAL_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
+            [.runs[0].results[] | select($s[.ruleId] >= 9.0)] | length
+          ')
+          HIGH_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
+            [.runs[0].results[] | select($s[.ruleId] >= 7.0 and $s[.ruleId] < 9.0)] | length
+          ')
+          TOTAL=$((CRITICAL_COUNT + HIGH_COUNT))
+
+          SCAN_OUTPUT=$(
+            echo "# Container Scan Summary"
+            echo ""
+
+            if [[ ${TOTAL} -eq 0 ]]; then
+              echo "✅ No fixable high or critical vulnerabilities found."
+            else
+              echo "${CRITICAL_COUNT} critical, ${HIGH_COUNT} high."
+              echo ""
+              echo "## Detailed Findings"
+              echo ""
+
+              get_findings() {
+                local min_score=$1
+                local max_score=$2
+                echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" \
+                  --argjson min "${min_score}" --argjson max "${max_score}" '
+                  def advisory_line:
+                    (try (.ruleId | capture("^(?<id>CVE-[0-9]+-[0-9]+|GHSA-[a-zA-Z0-9]+-[a-zA-Z0-9]+-[a-zA-Z0-9]+)") | .id) // .ruleId) as $id
+                    | (if ($id | startswith("CVE-")) then "https://nvd.nist.gov/vuln/detail/\($id)"
+                      elif ($id | startswith("GHSA-")) then "https://github.com/advisories/\($id)"
+                      else "" end) as $url
+                    | if $url != "" then "- [\($id)](\($url)) - \(.message.text)"
+                      else "- \(.ruleId) - \(.message.text)"
+                      end;
+                  .runs[0].results[]
+                  | select($s[.ruleId] >= $min and $s[.ruleId] < $max)
+                  | advisory_line
+                '
+              }
+
+              CRITICAL_FINDINGS=$(get_findings 9.0 10.1)
+              HIGH_FINDINGS=$(get_findings 7.0 9.0)
+
+              print_findings "Critical" "${CRITICAL_FINDINGS}"
+              print_findings "High" "${HIGH_FINDINGS}"
+
+              echo "## Source"
+              echo ""
+              echo "<table>"
+              echo "<tr><td><strong>Workflow</strong></td><td><a href=\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\">View run</a></td></tr>"
+              echo "</table>"
+            fi
+          )
+
+          echo "${SCAN_OUTPUT}"
+          {
+            echo "scan-summary<<EOF"
+            echo "${SCAN_OUTPUT}"
+            echo "EOF"
+            echo "critical-count=${CRITICAL_COUNT}"
+            echo "high-count=${HIGH_COUNT}"
+          } >>"${GITHUB_OUTPUT}"
+
+      - name: Fail Build on Findings
+        if: |
+          steps.process_scan_result.outputs.critical-count > 0 ||
+          steps.process_scan_result.outputs.high-count > 0
+        id: fail_build
+        shell: bash
+        env:
+          CRITICAL_COUNT: ${{ steps.process_scan_result.outputs.critical-count }}
+          HIGH_COUNT: ${{ steps.process_scan_result.outputs.high-count }}
+        run: |
+          echo "Found ${CRITICAL_COUNT} critical and ${HIGH_COUNT} high severity fixable vulnerabilities"
+          exit 1
+
       - name: Slack CVE Alert
-        if: failure() && steps.scan.outcome == 'failure'
+        if: always() && (steps.process_scan_result.outputs.critical-count > 0 || steps.process_scan_result.outputs.high-count > 0)
         id: slack_cve_alert
         uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
