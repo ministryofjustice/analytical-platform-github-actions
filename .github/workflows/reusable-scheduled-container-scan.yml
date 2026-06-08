@@ -162,7 +162,7 @@ jobs:
                           .help.text
                           | split("\n")
                           | map(select(startswith("Fix Version: ")))
-                          | if length > 0 then .[0] | ltrimstr("Fix Version: ") else "" end
+                          | if length > 0 then .[0] | ltrimstr("Fix Version: ") | split(",") | first else "" end
                         )
                       })
                     | from_entries) as $fix_versions
