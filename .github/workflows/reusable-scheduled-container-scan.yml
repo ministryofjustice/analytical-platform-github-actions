@@ -155,14 +155,26 @@ jobs:
                 local max_score=$2
                 echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" \
                   --argjson min "${min_score}" --argjson max "${max_score}" '
-                  def advisory_line:
-                    (try (.ruleId | capture("^(?<id>CVE-[0-9]+-[0-9]+|GHSA-[a-zA-Z0-9]+-[a-zA-Z0-9]+-[a-zA-Z0-9]+)") | .id) // .ruleId) as $id
-                    | (if ($id | startswith("CVE-")) then "https://nvd.nist.gov/vuln/detail/\($id)"
-                      elif ($id | startswith("GHSA-")) then "https://github.com/advisories/\($id)"
-                      else "" end) as $url
-                    | if $url != "" then "- [\($id)](\($url)) - \(.message.text)"
-                      else "- \(.ruleId) - \(.message.text)"
-                      end;
+                  (.runs[0].tool.driver.rules
+                    | map({
+                        key: .id,
+                        value: (
+                          .help.text
+                          | split("\n")
+                          | map(select(startswith("Fix Version: ")))
+                          | if length > 0 then .[0] | ltrimstr("Fix Version: ") else "" end
+                        )
+                      })
+                    | from_entries) as $fix_versions
+                  | def advisory_line:
+                      (try (.ruleId | capture("^(?<id>CVE-[0-9]+-[0-9]+|GHSA-[a-zA-Z0-9]+-[a-zA-Z0-9]+-[a-zA-Z0-9]+)") | .id) // .ruleId) as $id
+                      | (if ($id | startswith("CVE-")) then "https://nvd.nist.gov/vuln/detail/\($id)"
+                        elif ($id | startswith("GHSA-")) then "https://github.com/advisories/\($id)"
+                        else "" end) as $url
+                      | (($fix_versions[.ruleId] // "") | if . != "" then " (fixed in \(.)" else "" end) as $fix
+                      | if $url != "" then "- [\($id)](\($url)) - \(.message.text)\($fix)"
+                        else "- \(.ruleId) - \(.message.text)\($fix)"
+                        end;
                   .runs[0].results[]
                   | select($s[.ruleId] >= $min and $s[.ruleId] < $max)
                   | advisory_line
