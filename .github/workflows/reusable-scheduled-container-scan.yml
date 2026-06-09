@@ -36,8 +36,6 @@ jobs:
       - name: Get Latest Release Tag
         id: get_latest_release
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           latestReleaseTag=$(gh release list --repo ${{ github.repository }} --exclude-drafts --exclude-pre-releases --json "isLatest,tagName" | jq -r '.[] | select(.isLatest == true) | .tagName')
           export latestReleaseTag
@@ -59,27 +57,35 @@ jobs:
 
           if [[ "${imageName}" == "ghcr.io/ministryofjustice/analytical-platform-"* ]]; then
             imageRepository=${imageName#ghcr.io/}
-            BASE_GRYPE="base-grype.yml"
 
-            if ! curl --silent --show-error --fail --location \
-              "https://raw.githubusercontent.com/${imageRepository}/main/.grype.yml" \
-              --output "${BASE_GRYPE}"; then
-              echo "No base .grype.yml found in ${imageRepository}"
-              rm -f "${BASE_GRYPE}"
-            fi
+            downloadGrypeYml=$(gh api "repos/${imageRepository}/contents/.grype.yml" 2>/dev/null || true)
+            export downloadGrypeYml
 
-            if [[ -f "${BASE_GRYPE}" ]] && [[ -f .grype.yml ]]; then
-              echo "Merging base and local .grype.yml configurations"
-              # shellcheck disable=SC2016
-              yq eval-all 'explode(.) as $item ireduce ({}; . *+ $item)' "${BASE_GRYPE}" .grype.yml > merged-grype.yml
-              mv merged-grype.yml .grype.yml
-            elif [[ -f "${BASE_GRYPE}" ]]; then
-              mv "${BASE_GRYPE}" .grype.yml
-              echo "Using .grype.yml from base repository"
-            elif [[ -f .grype.yml ]]; then
-              echo "Using local .grype.yml configuration"
+            downloadGrypeYmlStatus=$(jq -r '.status' <<< "${downloadGrypeYml}")
+            export downloadGrypeYmlStatus
+
+            if [[ "${downloadGrypeYmlStatus}" == "null" ]]; then
+              echo "Using .grype.yml from ${imageRepository} (default branch)"
+              jq -r '.sha' <<< "${downloadGrypeYml}" || true
+
+              echo ".grype.yml found, writing to file"
+              jq -r '.content' <<< "${downloadGrypeYml}" | base64 --decode > .base-grype.yml
+
+              if [[ ! -f .grype.yml ]]; then
+                echo ".grype.yml not found, using base as-is"
+                mv .base-grype.yml .grype.yml
+              else
+                echo ".grype.yml already exists, merging with base"
+                # shellcheck disable=SC2016
+                yq eval-all 'explode(.) as $item ireduce ({}; . *+ $item)' .base-grype.yml .grype.yml > merged-grype.yml
+                mv merged-grype.yml .grype.yml
+              fi
+
+            elif [[ "${downloadGrypeYmlStatus}" == "404" ]]; then
+              echo ".grype.yml not found in ${imageRepository}, using default values" # It's OK if we don't find one
             else
-              echo "No .grype.yml found, Grype will use default configuration"
+              echo "Error downloading .grype.yml"
+              exit 1
             fi
           else
             echo "Image is not an Analytical Platform image, skipping .grype.yml download"
@@ -196,6 +202,7 @@ jobs:
           )
 
           echo "${SCAN_OUTPUT}"
+          echo "${SCAN_OUTPUT}" >>"${GITHUB_STEP_SUMMARY}"
           {
             echo "scan-summary<<EOF"
             echo "${SCAN_OUTPUT}"
