@@ -225,6 +225,7 @@ jobs:
           })
 
           echo "${SCAN_OUTPUT}"
+          echo "${SCAN_OUTPUT}" >>"${GITHUB_STEP_SUMMARY}"
           {
             echo "scan-summary<<EOF"
             echo "${SCAN_OUTPUT}"
