@@ -79,7 +79,7 @@ jobs:
               fi
 
             elif [[ "${downloadGrypeYmlStatus}" == "404" ]]; then
-              echo ".grype.yml not found in ${imageRepository}" # It's OK if we don't find one
+              echo ".grype.yml not found in ${imageRepository}, using default values" # It's OK if we don't find one
             else
               echo "Error downloading .grype.yml"
               exit 1
