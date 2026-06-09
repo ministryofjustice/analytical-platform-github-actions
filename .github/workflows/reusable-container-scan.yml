@@ -2,13 +2,14 @@
 on:
   workflow_call:
     inputs:
-      runtime:
-        type: string
-        required: true
       clean-actions-runner:
         type: boolean
         required: false
         default: true
+      container-file:
+        type: string
+        required: false
+        default: Dockerfile
 
 permissions: {}
 
@@ -44,31 +45,47 @@ jobs:
 
       - name: Generate .grype.yml Configuration
         id: generate_grype_config
-        shell: bash
         env:
-          RUNTIME: ${{ inputs.runtime }}
+          CONTAINER_FILE: ${{ inputs.container-file }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
-          BASE_GRYPE="analytical-platform-${RUNTIME}-base-grype.yml"
+          imageName=$(grep "^FROM" "${CONTAINER_FILE}" | cut -d' ' -f2 | cut -d':' -f1)
 
-          if ! curl --silent --show-error --fail --location \
-            "https://raw.githubusercontent.com/ministryofjustice/analytical-platform-${RUNTIME}-base/main/.grype.yml" \
-            --output "${BASE_GRYPE}"; then
-            echo "No base .grype.yml found"
-            rm -f "${BASE_GRYPE}"
-          fi
+          if [[ "${imageName}" == "ghcr.io/ministryofjustice/analytical-platform-"* ]]; then
+            imageRepository=${imageName#ghcr.io/}
 
-          if [[ -f "${BASE_GRYPE}" ]] && [[ -f .grype.yml ]]; then
-            echo "Merging base and local .grype.yml configurations"
-            # shellcheck disable=SC2016
-            yq eval-all 'explode(.) as $item ireduce ({}; . *+ $item)' "${BASE_GRYPE}" .grype.yml > merged-grype.yml
-            mv merged-grype.yml .grype.yml
-          elif [[ -f "${BASE_GRYPE}" ]]; then
-            mv "${BASE_GRYPE}" .grype.yml
-            echo "Using .grype.yml from base repository"
-          elif [[ -f .grype.yml ]]; then
-            echo "Using local .grype.yml configuration"
+            downloadGrypeYml=$(gh api "repos/${imageRepository}/contents/.grype.yml" 2>/dev/null || true)
+            export downloadGrypeYml
+
+            downloadGrypeYmlStatus=$(jq -r '.status' <<< "${downloadGrypeYml}")
+            export downloadGrypeYmlStatus
+
+            if [[ "${downloadGrypeYmlStatus}" == "null" ]]; then
+              echo "Using .grype.yml from ${imageRepository} (default branch)"
+              jq -r '.sha' <<< "${downloadGrypeYml}" || true
+
+              echo ".grype.yml found, writing to file"
+              jq -r '.content' <<< "${downloadGrypeYml}" | base64 --decode > .base-grype.yml
+
+              if [[ ! -f .grype.yml ]]; then
+                echo ".grype.yml not found, using base as-is"
+                mv .base-grype.yml .grype.yml
+              else
+                echo ".grype.yml already exists, merging with base"
+                # shellcheck disable=SC2016
+                yq eval-all 'explode(.) as $item ireduce ({}; . *+ $item)' .base-grype.yml .grype.yml > merged-grype.yml
+                mv merged-grype.yml .grype.yml
+              fi
+
+            elif [[ "${downloadGrypeYmlStatus}" == "404" ]]; then
+              echo ".grype.yml not found in ${imageRepository}" # It's OK if we don't find one
+            else
+              echo "Error downloading .grype.yml"
+              exit 1
+            fi
           else
-            echo "No .grype.yml found, Grype will use default configuration"
+            echo "Image is not an Analytical Platform image, skipping .grype.yml download"
           fi
 
       - name: Build Container Image
