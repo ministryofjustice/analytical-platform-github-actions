@@ -5,6 +5,10 @@ on:
       runtime:
         type: string
         required: true
+      clean-actions-runner:
+        type: boolean
+        required: false
+        default: true
 
 permissions: {}
 
@@ -32,6 +36,7 @@ jobs:
           persist-credentials: false
 
       - name: Clean Actions Runner
+        if: inputs.clean-actions-runner == true
         id: clean_actions_runner
         uses: ministryofjustice/action-clean-runner@390530713a326ddc099b2114f38dd0f2f8eac6da # v1.1.0
         with:
