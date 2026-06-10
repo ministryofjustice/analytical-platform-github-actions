@@ -4,10 +4,10 @@ Builds and scans a container for vulnerabilities with [Grype](https://github.com
 
 ## Inputs
 
-|         Input          |   Type   | Required |     Default     |
-| :--------------------: | :------: | :------: | :-------------: |
-| `clean-actions-runner` |  `bool`  | `false`  |     `true`      |
-|    `container-file`    | `string` | `false`  |  `Dockerfile`   |
+|         Input          |   Type   | Required |   Default    |
+| :--------------------: | :------: | :------: | :----------: |
+| `clean-actions-runner` |  `bool`  | `false`  |    `true`    |
+|    `container-file`    | `string` | `false`  | `Dockerfile` |
 
 ## Usage
 
@@ -31,5 +31,4 @@ jobs:
       pull-requests: write
       security-events: write
     uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-container-scan.yml@<commit SHA> # <version>
-
 ```
