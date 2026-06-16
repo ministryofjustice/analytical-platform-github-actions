@@ -1,12 +1,6 @@
 # Scheduled Container Scan
 
-Scans the latest release for vulnerabilities with [Trivy](https://github.com/aquasecurity/trivy) using [aquasecurity/trivy-action](https://github.com/aquasecurity/trivy-action)
-
-## Inputs
-
-|      Input      |   Type   | Required |     Default     |
-| :-------------: | :------: | :------: | :-------------: |
-| `scan-severity` | `string` | `false`  | `HIGH,CRITICAL` |
+Builds and scans a container for vulnerabilities with [Grype](https://github.com/anchore/grype) using [anchore/scan-action](https://github.com/anchore/scan-action). A Slack alert is sent only when high or critical fixable vulnerabilities are found.
 
 ## Usage
 
