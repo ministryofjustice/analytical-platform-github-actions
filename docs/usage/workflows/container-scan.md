@@ -27,7 +27,6 @@ jobs:
     name: Container Scan
     permissions:
       contents: read
-      id-token: write
       pull-requests: write
       security-events: write
     uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-container-scan.yml@<commit SHA> # <version>
