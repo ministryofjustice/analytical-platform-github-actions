@@ -130,22 +130,19 @@ jobs:
 
           SARIF=$(cat result.sarif)
 
-          # The SARIF format stores rules (vulnerability definitions) separately from results (findings).
-          # The step first builds a RULE_SEVERITIES map of ruleId → score from the rules section.
+          # Grype records two severities per finding: the SARIF "security-severity" property
+          # (the NVD CVSS base score) and a qualitative severity embedded in the result's
+          # message text. For OS/distro packages the qualitative severity reflects the distro
+          # (e.g. Ubuntu) rating, so we categorise on it to keep the bucket consistent with the
+          # severity shown to the user. It is parsed from the leading "A <severity> vulnerability".
 
-          RULE_SEVERITIES=$(echo "${SARIF}" | jq -c '
-            .runs[0].tool.driver.rules
-            | map({key: .id, value: (.properties["security-severity"] // "0" | tonumber)})
-            | from_entries
+          CRITICAL_COUNT=$(echo "${SARIF}" | jq '
+            def sev: ((.message.text | capture("^A (?<w>[A-Za-z]+) vulnerability") | .w | ascii_downcase) // "unknown");
+            [.runs[0].results[] | select(sev == "critical")] | length
           ')
-
-          # Then it counts critical and high severity findings by looking up the score for each result's ruleId in the RULE_SEVERITIES map.
-
-          CRITICAL_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
-            [.runs[0].results[] | select($s[.ruleId] >= 9.0)] | length
-          ')
-          HIGH_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
-            [.runs[0].results[] | select($s[.ruleId] >= 7.0 and $s[.ruleId] < 9.0)] | length
+          HIGH_COUNT=$(echo "${SARIF}" | jq '
+            def sev: ((.message.text | capture("^A (?<w>[A-Za-z]+) vulnerability") | .w | ascii_downcase) // "unknown");
+            [.runs[0].results[] | select(sev == "high")] | length
           ')
           TOTAL=$((CRITICAL_COUNT + HIGH_COUNT))
 
@@ -164,12 +161,11 @@ jobs:
               echo "## Detailed Findings"
               echo ""
 
-              # get_findings min max — filters SARIF results by severity band and formats each as a markdown bullet.
+              # get_findings severity — filters SARIF results by qualitative severity and formats each as a markdown bullet.
               get_findings() {
-                local min_score=$1
-                local max_score=$2
-                echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" \
-                  --argjson min "${min_score}" --argjson max "${max_score}" '
+                local severity=$1
+                echo "${SARIF}" | jq -r --arg severity "${severity}" '
+                  def sev: ((.message.text | capture("^A (?<w>[A-Za-z]+) vulnerability") | .w | ascii_downcase) // "unknown");
 
                   # 1. Build $fix_versions map: scans each rule'\''s help.text for a "Fix Version:" line and maps ruleId → first fix version
 
@@ -193,21 +189,21 @@ jobs:
                       | (if ($id | startswith("CVE-")) then "https://nvd.nist.gov/vuln/detail/\($id)"
                         elif ($id | startswith("GHSA-")) then "https://github.com/advisories/\($id)"
                         else "" end) as $url
-                      | (($fix_versions[.ruleId] // "") | if . != "" then " (fixed in \(.)" else "" end) as $fix
+                      | (($fix_versions[.ruleId] // "") | if . != "" then " (fixed in \(.))" else "" end) as $fix
                       | if $url != "" then "- [\($id)](\($url)) - \(.message.text)\($fix)"
                         else "- \(.ruleId) - \(.message.text)\($fix)"
                         end;
 
-                  # 3. Filter + emit: stream results[], keep entries where severity score is >= min and < max, apply advisory_line to each
+                  # 3. Filter + emit: stream results[], keep entries matching the qualitative severity, apply advisory_line to each
 
                   .runs[0].results[]
-                  | select($s[.ruleId] >= $min and $s[.ruleId] < $max)
+                  | select(sev == $severity)
                   | advisory_line
                 '
               }
 
-              CRITICAL_FINDINGS=$(get_findings 9.0 10.1)
-              HIGH_FINDINGS=$(get_findings 7.0 9.0)
+              CRITICAL_FINDINGS=$(get_findings "critical")
+              HIGH_FINDINGS=$(get_findings "high")
 
               print_findings "Critical" "${CRITICAL_FINDINGS}"
               print_findings "High" "${HIGH_FINDINGS}"
