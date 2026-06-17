@@ -36,6 +36,8 @@ jobs:
       - name: Get Latest Release Tag
         id: get_latest_release
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           latestReleaseTag=$(gh release list --repo ${{ github.repository }} --exclude-drafts --exclude-pre-releases --json "isLatest,tagName" | jq -r '.[] | select(.isLatest == true) | .tagName')
           export latestReleaseTag
