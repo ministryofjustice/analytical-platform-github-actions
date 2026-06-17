@@ -131,12 +131,6 @@ jobs:
 
           SARIF=$(cat result.sarif)
 
-          # Grype records two severities per finding: the SARIF "security-severity" property
-          # (the NVD CVSS base score) and a qualitative severity embedded in the result's
-          # message text. For OS/distro packages the qualitative severity reflects the distro
-          # (e.g. Ubuntu) rating, so we categorise on it to keep the bucket consistent with the
-          # severity shown to the user. It is parsed from the leading "A <severity> vulnerability".
-
           CRITICAL_COUNT=$(echo "${SARIF}" | jq '
             def sev: ((.message.text | capture("^A (?<w>[A-Za-z]+) vulnerability") | .w | ascii_downcase) // "unknown");
             [.runs[0].results[] | select(sev == "critical")] | length
