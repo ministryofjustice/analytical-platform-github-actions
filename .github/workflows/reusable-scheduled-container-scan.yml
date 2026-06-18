@@ -131,7 +131,10 @@ jobs:
 
           SARIF=$(cat result.sarif)
 
-          # Build a lookup map of ruleId -> security-severity score from the rules section
+          # The SARIF format stores rules (vulnerability definitions) separately from results (findings).
+          # Build a RULE_SEVERITIES map of ruleId → NVD CVSS base score, then count findings by score band.
+          # The finding message text is rewritten to match the classified severity so the output is consistent.
+
           RULE_SEVERITIES=$(echo "${SARIF}" | jq -c '
             .runs[0].tool.driver.rules
             | map({key: .id, value: (.properties["security-severity"] // "0" | tonumber)})
@@ -161,8 +164,10 @@ jobs:
               get_findings() {
                 local min_score=$1
                 local max_score=$2
+                local severity=$3
                 echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" \
-                  --argjson min "${min_score}" --argjson max "${max_score}" '
+                  --argjson min "${min_score}" --argjson max "${max_score}" \
+                  --arg severity "${severity}" '
                   (.runs[0].tool.driver.rules
                     | map({
                         key: .id,
@@ -180,8 +185,12 @@ jobs:
                         elif ($id | startswith("GHSA-")) then "https://github.com/advisories/\($id)"
                         else "" end) as $url
                       | (($fix_versions[.ruleId] // "") | if . != "" then " (fixed in \(.)" else "" end) as $fix
-                      | if $url != "" then "- [\($id)](\($url)) - \(.message.text)\($fix)"
-                        else "- \(.ruleId) - \(.message.text)\($fix)"
+                      | (if (.message.text | test("^A [A-Za-z]+ vulnerability"))
+                         then (.message.text | sub("^A [A-Za-z]+ vulnerability"; "A \($severity) vulnerability"))
+                         else "A \($severity) vulnerability: \(.message.text)"
+                         end) as $text
+                      | if $url != "" then "- [\($id)](\($url)) - \($text)\($fix)"
+                        else "- \(.ruleId) - \($text)\($fix)"
                         end;
                   .runs[0].results[]
                   | select($s[.ruleId] >= $min and $s[.ruleId] < $max)
@@ -189,8 +198,8 @@ jobs:
                 '
               }
 
-              CRITICAL_FINDINGS=$(get_findings 9.0 10.1)
-              HIGH_FINDINGS=$(get_findings 7.0 9.0)
+              CRITICAL_FINDINGS=$(get_findings 9.0 10.1 "critical")
+              HIGH_FINDINGS=$(get_findings 7.0 9.0 "high")
 
               print_findings "Critical" "${CRITICAL_FINDINGS}"
               print_findings "High" "${HIGH_FINDINGS}"

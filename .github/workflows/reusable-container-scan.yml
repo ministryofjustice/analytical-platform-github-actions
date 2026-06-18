@@ -131,15 +131,14 @@ jobs:
           SARIF=$(cat result.sarif)
 
           # The SARIF format stores rules (vulnerability definitions) separately from results (findings).
-          # The step first builds a RULE_SEVERITIES map of ruleId → score from the rules section.
+          # Build a RULE_SEVERITIES map of ruleId → NVD CVSS base score, then count findings by score band.
+          # The finding message text is rewritten to match the classified severity so the output is consistent.
 
           RULE_SEVERITIES=$(echo "${SARIF}" | jq -c '
             .runs[0].tool.driver.rules
             | map({key: .id, value: (.properties["security-severity"] // "0" | tonumber)})
             | from_entries
           ')
-
-          # Then it counts critical and high severity findings by looking up the score for each result's ruleId in the RULE_SEVERITIES map.
 
           CRITICAL_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
             [.runs[0].results[] | select($s[.ruleId] >= 9.0)] | length
@@ -164,12 +163,15 @@ jobs:
               echo "## Detailed Findings"
               echo ""
 
-              # get_findings min max — filters SARIF results by severity band and formats each as a markdown bullet.
+              # get_findings min max severity — filters SARIF results by CVSS score band, rewrites the severity word
+              # in each finding's message to match the classified severity, and formats each as a markdown bullet.
               get_findings() {
                 local min_score=$1
                 local max_score=$2
+                local severity=$3
                 echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" \
-                  --argjson min "${min_score}" --argjson max "${max_score}" '
+                  --argjson min "${min_score}" --argjson max "${max_score}" \
+                  --arg severity "${severity}" '
 
                   # 1. Build $fix_versions map: scans each rule'\''s help.text for a "Fix Version:" line and maps ruleId → first fix version
 
@@ -194,11 +196,15 @@ jobs:
                         elif ($id | startswith("GHSA-")) then "https://github.com/advisories/\($id)"
                         else "" end) as $url
                       | (($fix_versions[.ruleId] // "") | if . != "" then " (fixed in \(.)" else "" end) as $fix
-                      | if $url != "" then "- [\($id)](\($url)) - \(.message.text)\($fix)"
-                        else "- \(.ruleId) - \(.message.text)\($fix)"
+                      | (if (.message.text | test("^A [A-Za-z]+ vulnerability"))
+                         then (.message.text | sub("^A [A-Za-z]+ vulnerability"; "A \($severity) vulnerability"))
+                         else "A \($severity) vulnerability: \(.message.text)"
+                         end) as $text
+                      | if $url != "" then "- [\($id)](\($url)) - \($text)\($fix)"
+                        else "- \(.ruleId) - \($text)\($fix)"
                         end;
 
-                  # 3. Filter + emit: stream results[], keep entries where severity score is >= min and < max, apply advisory_line to each
+                  # 3. Filter + emit: stream results[], keep entries where CVSS score is >= min and < max, apply advisory_line to each
 
                   .runs[0].results[]
                   | select($s[.ruleId] >= $min and $s[.ruleId] < $max)
@@ -206,8 +212,8 @@ jobs:
                 '
               }
 
-              CRITICAL_FINDINGS=$(get_findings 9.0 10.1)
-              HIGH_FINDINGS=$(get_findings 7.0 9.0)
+              CRITICAL_FINDINGS=$(get_findings 9.0 10.1 "critical")
+              HIGH_FINDINGS=$(get_findings 7.0 9.0 "high")
 
               print_findings "Critical" "${CRITICAL_FINDINGS}"
               print_findings "High" "${HIGH_FINDINGS}"
