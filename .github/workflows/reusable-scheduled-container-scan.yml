@@ -22,7 +22,7 @@ jobs:
       - name: Harden Runner
         if: github.event.repository.private == false
         id: harden_runner
-        uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
@@ -46,7 +46,7 @@ jobs:
 
       - name: Checkout (use main for .grype.yml)
         id: checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
           ref: main
@@ -95,7 +95,7 @@ jobs:
 
       - name: Build Container Image
         id: build
-        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: .
           push: false
@@ -131,13 +131,21 @@ jobs:
 
           SARIF=$(cat result.sarif)
 
-          CRITICAL_COUNT=$(echo "${SARIF}" | jq '
-            def sev: ((.message.text | capture("^A (?<w>[A-Za-z]+) vulnerability") | .w | ascii_downcase) // "unknown");
-            [.runs[0].results[] | select(sev == "critical")] | length
+          # The SARIF format stores rules (vulnerability definitions) separately from results (findings).
+          # Build a RULE_SEVERITIES map of ruleId → NVD CVSS base score, then count findings by score band.
+          # The finding message text is rewritten to match the classified severity so the output is consistent.
+
+          RULE_SEVERITIES=$(echo "${SARIF}" | jq -c '
+            .runs[0].tool.driver.rules
+            | map({key: .id, value: (.properties["security-severity"] // "0" | tonumber)})
+            | from_entries
           ')
-          HIGH_COUNT=$(echo "${SARIF}" | jq '
-            def sev: ((.message.text | capture("^A (?<w>[A-Za-z]+) vulnerability") | .w | ascii_downcase) // "unknown");
-            [.runs[0].results[] | select(sev == "high")] | length
+
+          CRITICAL_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
+            [.runs[0].results[] | select($s[.ruleId] >= 9.0)] | length
+          ')
+          HIGH_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
+            [.runs[0].results[] | select($s[.ruleId] >= 7.0 and $s[.ruleId] < 9.0)] | length
           ')
           TOTAL=$((CRITICAL_COUNT + HIGH_COUNT))
 
@@ -154,9 +162,12 @@ jobs:
               echo ""
 
               get_findings() {
-                local severity=$1
-                echo "${SARIF}" | jq -r --arg severity "${severity}" '
-                  def sev: ((.message.text | capture("^A (?<w>[A-Za-z]+) vulnerability") | .w | ascii_downcase) // "unknown");
+                local min_score=$1
+                local max_score=$2
+                local severity=$3
+                echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" \
+                  --argjson min "${min_score}" --argjson max "${max_score}" \
+                  --arg severity "${severity}" '
                   (.runs[0].tool.driver.rules
                     | map({
                         key: .id,
@@ -173,18 +184,19 @@ jobs:
                       | (if ($id | startswith("CVE-")) then "https://nvd.nist.gov/vuln/detail/\($id)"
                         elif ($id | startswith("GHSA-")) then "https://github.com/advisories/\($id)"
                         else "" end) as $url
-                      | (($fix_versions[.ruleId] // "") | if . != "" then " (fixed in \(.))" else "" end) as $fix
-                      | if $url != "" then "- [\($id)](\($url)) - \(.message.text)\($fix)"
-                        else "- \(.ruleId) - \(.message.text)\($fix)"
+                      | (($fix_versions[.ruleId] // "") | if . != "" then " (fixed in \(.)" else "" end) as $fix
+                      | (.message.text | sub("^A [A-Za-z]+ vulnerability"; "A \($severity) vulnerability")) as $text
+                      | if $url != "" then "- [\($id)](\($url)) - \($text)\($fix)"
+                        else "- \(.ruleId) - \($text)\($fix)"
                         end;
                   .runs[0].results[]
-                  | select(sev == $severity)
+                  | select($s[.ruleId] >= $min and $s[.ruleId] < $max)
                   | advisory_line
                 '
               }
 
-              CRITICAL_FINDINGS=$(get_findings "critical")
-              HIGH_FINDINGS=$(get_findings "high")
+              CRITICAL_FINDINGS=$(get_findings 9.0 10.1 "critical")
+              HIGH_FINDINGS=$(get_findings 7.0 9.0 "high")
 
               print_findings "Critical" "${CRITICAL_FINDINGS}"
               print_findings "High" "${HIGH_FINDINGS}"
