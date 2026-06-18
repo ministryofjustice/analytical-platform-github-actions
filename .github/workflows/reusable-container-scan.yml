@@ -196,7 +196,10 @@ jobs:
                         elif ($id | startswith("GHSA-")) then "https://github.com/advisories/\($id)"
                         else "" end) as $url
                       | (($fix_versions[.ruleId] // "") | if . != "" then " (fixed in \(.)" else "" end) as $fix
-                      | (.message.text | sub("^A [A-Za-z]+ vulnerability"; "A \($severity) vulnerability")) as $text
+                      | (if (.message.text | test("^A [A-Za-z]+ vulnerability"))
+                         then (.message.text | sub("^A [A-Za-z]+ vulnerability"; "A \($severity) vulnerability"))
+                         else "A \($severity) vulnerability: \(.message.text)"
+                         end) as $text
                       | if $url != "" then "- [\($id)](\($url)) - \($text)\($fix)"
                         else "- \(.ruleId) - \($text)\($fix)"
                         end;
