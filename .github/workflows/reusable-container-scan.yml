@@ -46,6 +46,7 @@ jobs:
         id: generate_grype_config
         env:
           CONTAINER_FILE: ${{ inputs.container-file }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           imageName=$(grep "^FROM" "${CONTAINER_FILE}" | cut -d' ' -f2 | cut -d':' -f1)
