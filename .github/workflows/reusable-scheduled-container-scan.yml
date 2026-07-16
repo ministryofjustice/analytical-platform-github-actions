@@ -240,10 +240,10 @@ jobs:
         id: slack_cve_alert
         uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
-          webhook-type: incoming-webhook
+          webhook-type: webhook-trigger
           webhook: ${{ secrets.cve-scan-slack-webhook-url }}
           payload: |
             {
-              "repository": "test-${{ github.repository }}",
+              "repository": "${{ github.repository }}",
               "run_id": "${{ github.run_id }}"
             }
