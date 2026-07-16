@@ -244,6 +244,6 @@ jobs:
           webhook: ${{ secrets.cve-scan-slack-webhook-url }}
           payload: |
             {
-              "repository": "${{ github.repository }}",
+              "repository": "test-${{ github.repository }}",
               "run_id": "${{ github.run_id }}"
             }
