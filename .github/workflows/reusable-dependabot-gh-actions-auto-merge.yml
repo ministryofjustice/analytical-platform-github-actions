@@ -28,18 +28,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Wait for Checks
-        if: >-
-          steps.fetch_metadata.outputs.package-ecosystem == 'github_actions' &&
-          (steps.fetch_metadata.outputs.update-type == 'version-update:semver-minor' ||
-          steps.fetch_metadata.outputs.update-type == 'version-update:semver-patch')
-        id: wait_for_checks
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          gh pr checks "${PR_URL}" --required --watch --fail-fast
-
       - name: Approve Pull Request
         if: >-
           steps.fetch_metadata.outputs.package-ecosystem == 'github_actions' &&
@@ -51,11 +39,10 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           echo "Approving Pull Request: ${PR_URL}"
-          gh pr review --approve "${PR_URL}"
 
       - name: Merge Pull Request
         if: >-
-          steps.fetch_metadata.outputs.package-ecosystem == 'github-actions' &&
+          steps.fetch_metadata.outputs.package-ecosystem == 'github_actions' &&
           (steps.fetch_metadata.outputs.update-type == 'version-update:semver-minor' ||
           steps.fetch_metadata.outputs.update-type == 'version-update:semver-patch')
         id: merge_pull_request
@@ -64,4 +51,3 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           echo "Merging Pull Request: ${PR_URL}"
-          gh pr merge --auto --squash "${PR_URL}"
