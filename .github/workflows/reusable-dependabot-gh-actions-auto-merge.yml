@@ -31,7 +31,8 @@ jobs:
       - name: Approve Pull Request
         if: >-
           steps.fetch_metadata.outputs.package-ecosystem == 'github_actions' &&
-          contains(steps.fetch_metadata.outputs.dependency-names, 'ministryofjustice/analytical-platform-github-actions') &&
+          (contains(steps.fetch_metadata.outputs.dependency-names, 'actions/') ||
+          contains(steps.fetch_metadata.outputs.dependency-names, 'ministryofjustice/analytical-platform-github-actions')) &&
           (steps.fetch_metadata.outputs.update-type == 'version-update:semver-minor' ||
           steps.fetch_metadata.outputs.update-type == 'version-update:semver-patch')
         id: approve_pull_request
@@ -44,7 +45,8 @@ jobs:
       - name: Merge Pull Request
         if: >-
           steps.fetch_metadata.outputs.package-ecosystem == 'github_actions' &&
-          contains(steps.fetch_metadata.outputs.dependency-names, 'ministryofjustice/analytical-platform-github-actions') &&
+          (contains(steps.fetch_metadata.outputs.dependency-names, 'actions/') ||
+          contains(steps.fetch_metadata.outputs.dependency-names, 'ministryofjustice/analytical-platform-github-actions')) &&
           (steps.fetch_metadata.outputs.update-type == 'version-update:semver-minor' ||
           steps.fetch_metadata.outputs.update-type == 'version-update:semver-patch')
         id: merge_pull_request
