@@ -65,7 +65,7 @@ jobs:
         with:
           context: .
           file: ${{ inputs.container-file }}
-          push: true
+          push: false
           tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
 
       - name: Cosign
@@ -83,6 +83,45 @@ jobs:
           image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           format: cyclonedx-json
           output-file: "sbom.cyclonedx.json"
+
+      - name: Check SBOM Size
+        id: check_sbom_size
+        shell: bash
+        env:
+          SBOM_MAX_BYTES: 16777216
+        run: |
+          size=$(stat -c%s "sbom.cyclonedx.json")
+          echo "SBOM size: ${size} bytes (limit: ${SBOM_MAX_BYTES} bytes)"
+          if [ "${size}" -gt "${SBOM_MAX_BYTES}" ]; then
+            echo "exceeds_limit=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "exceeds_limit=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Regenerate SBOM Without File Metadata
+        if: steps.check_sbom_size.outputs.exceeds_limit == 'true'
+        id: regenerate_sbom
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        env:
+          SYFT_FILE_METADATA_SELECTION: none
+        with:
+          image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          format: cyclonedx-json
+          output-file: "sbom.cyclonedx.json"
+
+      - name: Recheck SBOM Size
+        if: steps.check_sbom_size.outputs.exceeds_limit == 'true'
+        id: recheck_sbom_size
+        shell: bash
+        env:
+          SBOM_MAX_BYTES: 16777216
+        run: |
+          size=$(stat -c%s "sbom.cyclonedx.json")
+          echo "Regenerated SBOM size: ${size} bytes (limit: ${SBOM_MAX_BYTES} bytes)"
+          if [ "${size}" -gt "${SBOM_MAX_BYTES}" ]; then
+            echo "SBOM still exceeds ${SBOM_MAX_BYTES} bytes after dropping file metadata."
+            exit 1
+          fi
 
       - name: Github Attestation
         id: github_attestation
@@ -124,15 +163,15 @@ jobs:
             --repo ${{ github.repository }} \
             --signer-workflow ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-container-release.yml
 
-      - name: Slack Release Alert
-        if: failure()
-        id: slack_release_alert
-        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
-        with:
-          webhook-type: incoming-webhook
-          webhook: ${{ secrets.release-failure-webhook-url }}
-          payload: |
-            {
-              "repository": "${{ github.repository }}",
-              "run_id": "${{ github.run_id }}"
-            }
+#      - name: Slack Release Alert
+#        if: failure()
+#        id: slack_release_alert
+#        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+#        with:
+#          webhook-type: incoming-webhook
+#          webhook: ${{ secrets.release-failure-webhook-url }}
+#          payload: |
+#            {
+#              "repository": "${{ github.repository }}",
+#              "run_id": "${{ github.run_id }}"
+#            }
