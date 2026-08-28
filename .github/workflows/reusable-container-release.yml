@@ -83,6 +83,54 @@ jobs:
           image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           format: cyclonedx-json
           output-file: "sbom.cyclonedx.json"
+          upload-artifact: false
+
+      - name: Check SBOM Size
+        id: check_sbom_size
+        shell: bash
+        env:
+          SBOM_MAX_BYTES: 16777216
+        run: |
+          size=$(stat -c%s "sbom.cyclonedx.json")
+          echo "SBOM size: ${size} bytes (limit: ${SBOM_MAX_BYTES} bytes)"
+          if [ "${size}" -gt "${SBOM_MAX_BYTES}" ]; then
+            echo "exceeds_limit=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "exceeds_limit=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Regenerate SBOM Without File Metadata
+        if: steps.check_sbom_size.outputs.exceeds_limit == 'true'
+        id: regenerate_sbom
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        env:
+          SYFT_FILE_METADATA_SELECTION: none
+        with:
+          image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          format: cyclonedx-json
+          output-file: "sbom.cyclonedx.json"
+          upload-artifact: false
+
+      - name: Recheck SBOM Size
+        if: steps.check_sbom_size.outputs.exceeds_limit == 'true'
+        id: recheck_sbom_size
+        shell: bash
+        env:
+          SBOM_MAX_BYTES: 16777216
+        run: |
+          size=$(stat -c%s "sbom.cyclonedx.json")
+          echo "Regenerated SBOM size: ${size} bytes (limit: ${SBOM_MAX_BYTES} bytes)"
+          if [ "${size}" -gt "${SBOM_MAX_BYTES}" ]; then
+            echo "SBOM still exceeds ${SBOM_MAX_BYTES} bytes after dropping file metadata."
+            exit 1
+          fi
+
+      - name: Upload SBOM Artifact
+        id: upload_sbom_artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom
+          path: sbom.cyclonedx.json
 
       - name: Github Attestation
         id: github_attestation
