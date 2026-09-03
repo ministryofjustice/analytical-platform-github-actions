@@ -78,7 +78,7 @@ jobs:
 
       - name: Generate SBOM
         id: generate_sbom
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        uses: anchore/sbom-action@aa80c8c5bd439a416a62804f2151ab38c671a638 # v0.24.1
         with:
           image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           format: cyclonedx-json
@@ -102,7 +102,7 @@ jobs:
       - name: Regenerate SBOM Without File Metadata
         if: steps.check_sbom_size.outputs.exceeds_limit == 'true'
         id: regenerate_sbom
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        uses: anchore/sbom-action@aa80c8c5bd439a416a62804f2151ab38c671a638 # v0.24.1
         env:
           SYFT_FILE_METADATA_SELECTION: none
         with:
