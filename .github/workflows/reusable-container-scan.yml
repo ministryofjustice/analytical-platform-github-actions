@@ -275,6 +275,20 @@ jobs:
               })
             }
 
+      - name: Run Maintenance Prompt
+        if: (steps.process_scan_result.outputs.critical-count > 0 || steps.process_scan_result.outputs.high-count > 0)
+        id: run_maintenance
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm install -g @github/copilot
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          copilot --allow-all-tools -p "Follow .github/prompts/maintenance.prompt.md and open the pull request. Do not ask questions."
+
       - name: Fail Build on Findings
         if: |
           steps.process_scan_result.outputs.critical-count > 0 ||
