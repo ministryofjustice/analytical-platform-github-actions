@@ -275,6 +275,89 @@ jobs:
               })
             }
 
+      - name: Install Grype (Deletable Rules Check)
+        id: install_grype_rules
+        uses: anchore/scan-action/download-grype@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+
+      - name: Check .grype.yml for Deletable Rules
+        id: grype_stale
+        shell: bash
+        env:
+          GRYPE: ${{ steps.install_grype_rules.outputs.cmd }}
+          IMAGE: docker:${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          # The repo's own .grype.yml as committed (before the base-image merge).
+          # Only these rules are checked, since base-image rules can't be deleted here.
+          if ! git show HEAD:.grype.yml > .own-grype.yml 2>/dev/null; then
+            echo "No .grype.yml in repo, nothing to check"
+            echo "stale-count=0" >>"${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          # Same settings as the Scan step; JSON includes .ignoredMatches + appliedIgnoreRules
+          "${GRYPE}" "${IMAGE}" --only-fixed -o json=.grype-ignores.json
+
+          # Rules with position and real line number (yq skips leading comments/blank lines/'---')
+          lineOffset=$(awk '!/^[[:space:]]*(#.*)?$/ && !/^---[[:space:]]*$/ {print NR-1; exit}' .own-grype.yml)
+          yq -o=json '[(.ignore // []) | to_entries[] | .value + {"__line": (.value | line), "__index": .key}]' .own-grype.yml \
+            | jq --argjson off "${lineOffset:-0}" 'map(.__line += $off)' > .own-grype-rules.json
+
+          # A rule is in use if Grype applied it to any ignored match. Grype records ALL
+          # rules that apply, so a rule covering an unfixed vuln still counts alongside only-fixed.
+          jq -n --slurpfile rules .own-grype-rules.json --slurpfile scan .grype-ignores.json '
+            def blank: . == null or . == "" or . == {};
+            def rulekey: {
+              v:  (if (.vulnerability | blank) then null else .vulnerability end),
+              p:  (if ((.package // {}).name | blank) then null else .package.name end),
+              ns: (if (.namespace | blank) then null else .namespace end),
+              fs: (if (.["fix-state"] | blank) then null else .["fix-state"] end)
+            };
+            ([$scan[0].ignoredMatches[]?.appliedIgnoreRules[]? | rulekey] | unique) as $used
+            | [ $rules[0][] | select(rulekey as $k | any($used[]; . == $k) | not) ]
+          ' > .stale-rules.json
+
+          STALE_COUNT=$(jq length .stale-rules.json)
+          TOTAL_RULES=$(jq length .own-grype-rules.json)
+
+          {
+            echo "## Rules that can be deleted from .grype.yml: ${STALE_COUNT}"
+            echo ""
+            if [[ "${STALE_COUNT}" -eq 0 ]]; then
+              echo "✅ None. All ${TOTAL_RULES} ignore rule(s) still match something in this image."
+            else
+              echo "| Line | Vulnerability | Package | Reason |"
+              echo "|---|---|---|---|"
+              jq -r '.[] | "| \(.__line) | \(.vulnerability // "-") | \(.package.name // "-") | \(.reason // "-") |"' .stale-rules.json
+              echo ""
+              echo "Download the **grype-cleanup** artifact for the final \`.grype.yml\` with these rules removed."
+            fi
+            echo ""
+          } >>"${GITHUB_STEP_SUMMARY}"
+
+          if [[ "${STALE_COUNT}" -gt 0 ]]; then
+            echo "::warning::${STALE_COUNT} rule(s) in .grype.yml can be deleted"
+
+            # Final .grype.yml with the deletable rules removed, e.g. del(.ignore[1], .ignore[4])
+            mkdir -p grype-cleanup
+            delExpr=$(jq -r '"del(" + ([.[].__index | ".ignore[\(.)]"] | join(", ")) + ")"' .stale-rules.json)
+            yq "${delExpr}" .own-grype.yml > grype-cleanup/.grype.yml
+          fi
+
+          echo "stale-count=${STALE_COUNT}" >>"${GITHUB_OUTPUT}"
+
+      - name: Upload Cleaned .grype.yml
+        if: steps.grype_stale.outputs.stale-count > 0
+        id: upload_grype_cleanup
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: grype-cleanup
+          path: grype-cleanup/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Fail Build on Findings
         if: |
           steps.process_scan_result.outputs.critical-count > 0 ||
