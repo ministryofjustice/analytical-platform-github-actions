@@ -96,19 +96,16 @@ jobs:
           load: true
           tags: ${{ github.sha }}
 
-      - name: Install Grype
-        id: install_grype
-        uses: anchore/scan-action/download-grype@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
-
       - name: Scan
         id: scan
-        shell: bash
-        env:
-          GRYPE: ${{ steps.install_grype.outputs.cmd }}
-          IMAGE: docker:${{ github.sha }}
-          GRYPE_CHECK_FOR_APP_UPDATE: "false"
-        run: |
-          "${GRYPE}" "${IMAGE}" -v --only-fixed -o sarif=result.sarif -o json=result.json
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ github.sha }}
+          severity-cutoff: high
+          only-fixed: true
+          fail-build: false
+          output-format: sarif
+          output-file: result.sarif
 
       - name: Upload SARIF
         id: upload_sarif
@@ -278,115 +275,90 @@ jobs:
               })
             }
 
-      - name: Check .grype.yml for Deletable Rules
-        id: grype_stale
+
+      - name: Show Deletable .grype.yml Rules
+        id: grype_deletable
+        continue-on-error: true
         shell: bash
         env:
-          GRYPE: ${{ steps.install_grype.outputs.cmd }}
+          IMAGE: ${{ github.sha }}
           GRYPE_CHECK_FOR_APP_UPDATE: "false"
-          GRYPE_DB_AUTO_UPDATE: "false" # use the same database the Scan step used
+          GRYPE_DB_AUTO_UPDATE: "false" # reuse the database the Scan step downloaded
         run: |
           set -euo pipefail
 
           if ! git show HEAD:.grype.yml > .own-grype.yml 2>/dev/null; then
-            echo "No .grype.yml in repo, nothing to check"
-            echo "stale-count=0" >>"${GITHUB_OUTPUT}"
-            exit 0
+            echo "No .grype.yml in repo, nothing to check"; exit 0
           fi
 
-          # Rules with position and real line number (yq skips leading comments/blank lines/'---')
+          # Grype binary installed by anchore/scan-action (tool cache)
+          GRYPE=$(find "${RUNNER_TOOL_CACHE}/grype" -type f -name grype 2>/dev/null | sort -V | tail -n1)
+          [[ -x "${GRYPE}" ]] || { echo "::warning::Grype from the Scan step not found; skipping"; exit 0; }
+          echo "Using ${GRYPE}"
+
+          # Same arguments as anchore/scan-action (-v --fail-on high --only-fixed), JSON output
+          set +e
+          "${GRYPE}" -v --fail-on high --only-fixed -o json --file .deletable-scan.json "${IMAGE}"
+          rc=$?
+          set -e
+          [[ ${rc} -eq 0 || ${rc} -eq 2 ]] || { echo "::warning::grype failed (exit ${rc}); skipping"; exit 0; }
+
+          # Repo rules with position and real line number
           lineOffset=$(awk '!/^[[:space:]]*(#.*)?$/ && !/^---[[:space:]]*$/ {print NR-1; exit}' .own-grype.yml)
           yq -o=json '[(.ignore // []) | to_entries[] | .value + {"__line": (.value | line), "__index": .key}]' .own-grype.yml \
             | jq --argjson off "${lineOffset:-0}" 'map(.__line += $off)' > .own-grype-rules.json
 
+          # Aliases (CVE <-> GO <-> GHSA) of every rule ID, from the same database
           mapfile -t ruleIds < <(jq -r '[.[].vulnerability // empty] | unique[]' .own-grype-rules.json)
           echo "[]" > .aliases.json
           if [[ ${#ruleIds[@]} -gt 0 ]]; then
             if ! "${GRYPE}" db search vuln "${ruleIds[@]}" -o json > .aliases.json 2>/dev/null; then
-              # Batch lookup fails if any ID is unknown; fall back to one ID at a time
               for id in "${ruleIds[@]}"; do
                 "${GRYPE}" db search vuln "${id}" -o json 2>/dev/null || echo "[]"
               done | jq -s 'add' > .aliases.json
             fi
-            # If the lookup returned nothing at all, aliases are unknown: recommend nothing
             if [[ "$(jq length .aliases.json)" -eq 0 ]]; then
-              echo "::warning::Could not look up vulnerability aliases; skipping deletion recommendations"
-              echo "stale-count=0" >>"${GITHUB_OUTPUT}"
-              exit 0
+              echo "::warning::Could not look up vulnerability aliases; skipping"; exit 0
             fi
           fi
 
-          jq -n --slurpfile rules .own-grype-rules.json --slurpfile scan result.json --slurpfile db .aliases.json '
+          # Deletable = rule with a vulnerability ID whose ID and aliases appear nowhere in the scan
+          jq -n --slurpfile rules .own-grype-rules.json --slurpfile scan .deletable-scan.json --slurpfile db .aliases.json '
             def up: ascii_upcase;
-            # Every vulnerability ID in the image, in any form
+            def groups: [ $db[0][]? | ([.id] + (.aliases // [])) | map(up) ];
+            def family($id): ([$id] + [ groups[] | select(index($id)) | .[] ]) | unique;
             ([ ($scan[0].matches[]?, $scan[0].ignoredMatches[]?)
                | .vulnerability.id, (.relatedVulnerabilities[]?.id) ] | map(up) | unique) as $present
-            # ID -> its aliases (both directions)
-            | ([ $db[0][]? | ([.id] + (.aliases // [])) | map(up) ]) as $groups
-            | def family($id): ([$id] + [ $groups[] | select(index($id)) | .[] ]) | unique;
-            {
-              stale: [ $rules[0][]
-                       | select((.vulnerability // "") != "")
-                       | select(family(.vulnerability | up) as $f | any($f[]; . as $x | $present | index($x)) | not) ],
-              review: [ $rules[0][]
-                        | select((.vulnerability // "") == "") ]
-            }
-          ' > .stale.json
+            | [ $rules[0][]
+                | select((.vulnerability // "") != "")
+                | select(family(.vulnerability | up) as $f | any($f[]; . as $x | $present | index($x)) | not) ]
+          ' > .deletable.json
 
-          # Package-only rules: only flag for review when Grype did not apply them
-          jq --slurpfile scan result.json '
-            def v($x): if $x == null or $x == "" then null else $x end;
-            def key: {name: v(.package.name), type: v(.package.type), location: v(.package.location), version: v(.package.version)};
-            ([$scan[0].ignoredMatches[]?.appliedIgnoreRules[]? | select(v(.vulnerability) == null) | key] | unique) as $used
-            | .review |= [ .[] | select(key as $k | $used | index([$k]) | not) ]
-          ' .stale.json > .stale2.json && mv .stale2.json .stale.json
-
-          STALE_COUNT=$(jq '.stale | length' .stale.json)
-          REVIEW_COUNT=$(jq '.review | length' .stale.json)
-          TOTAL_RULES=$(jq length .own-grype-rules.json)
-
+          COUNT=$(jq length .deletable.json)
           {
-            echo "## Rules that can be deleted from .grype.yml: ${STALE_COUNT}"
+            echo "## Rules that can be deleted from .grype.yml: ${COUNT}"
             echo ""
-            if [[ "${STALE_COUNT}" -eq 0 ]]; then
-              echo "✅ None. Every vulnerability in the ${TOTAL_RULES} rule(s) is still present in this image (under its own ID or an alias)."
+            if [[ "${COUNT}" -eq 0 ]]; then
+              echo "✅ None."
             else
-              echo "These vulnerabilities are gone from the image under every ID (CVE, GO, GHSA)."
+              echo "These vulnerabilities are no longer in the image under any ID (CVE, GO, GHSA)."
               echo ""
               echo "| Line | Vulnerability | Package | Reason |"
               echo "|---|---|---|---|"
-              jq -r '.stale[] | "| \(.__line) | \(.vulnerability) | \(.package.location // .package.name // "-") | \(.reason // "-") |"' .stale.json
+              jq -r '.[] | "| \(.__line) | \(.vulnerability) | \(.package.location // .package.name // "-") | \(.reason // "-") |"' .deletable.json
               echo ""
-              echo "Download the **grype-cleanup** artifact for the final \`.grype.yml\` with these rules removed."
-            fi
-            if [[ "${REVIEW_COUNT}" -gt 0 ]]; then
+              echo "<details><summary>.grype.yml with these rules removed</summary>"
               echo ""
-              echo "**Review manually (package-only rules that matched nothing, not removed):**"
+              echo '```yaml'
+              yq "$(jq -r '"del(" + ([.[].__index | ".ignore[\(.)]"] | join(", ")) + ")"' .deletable.json)" .own-grype.yml
+              echo '```'
               echo ""
-              jq -r '.review[] | "- line \(.__line): \(.package.location // .package.name // "-") - \(.reason // "-")"' .stale.json
+              echo "</details>"
             fi
             echo ""
           } >>"${GITHUB_STEP_SUMMARY}"
 
-          if [[ "${STALE_COUNT}" -gt 0 ]]; then
-            echo "::warning::${STALE_COUNT} rule(s) in .grype.yml can be deleted"
-            mkdir -p grype-cleanup
-            delExpr=$(jq -r '"del(" + ([.stale[].__index | ".ignore[\(.)]"] | join(", ")) + ")"' .stale.json)
-            yq "${delExpr}" .own-grype.yml > grype-cleanup/.grype.yml
-          fi
-
-          echo "stale-count=${STALE_COUNT}" >>"${GITHUB_OUTPUT}"
-
-      - name: Upload Cleaned .grype.yml
-        if: steps.grype_stale.outputs.stale-count > 0
-        id: upload_grype_cleanup
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: grype-cleanup
-          path: grype-cleanup/
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 30
+          [[ "${COUNT}" -eq 0 ]] || echo "::warning::${COUNT} rule(s) in .grype.yml can be deleted"
 
       - name: Fail Build on Findings
         if: |
