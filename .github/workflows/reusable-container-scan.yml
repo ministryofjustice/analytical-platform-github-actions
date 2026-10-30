@@ -96,16 +96,18 @@ jobs:
           load: true
           tags: ${{ github.sha }}
 
+      - name: Install Grype
+        id: install_grype
+        uses: anchore/scan-action/download-grype@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+
       - name: Scan
         id: scan
-        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
-        with:
-          image: ${{ github.sha }}
-          severity-cutoff: high
-          only-fixed: true
-          fail-build: false
-          output-format: sarif
-          output-file: result.sarif
+        shell: bash
+        env:
+          GRYPE: ${{ steps.install_grype.outputs.cmd }}
+          IMAGE: docker:${{ github.sha }}
+        run: |
+          "${GRYPE}" "${IMAGE}" --only-fixed -o sarif=result.sarif -o json=result.json
 
       - name: Upload SARIF
         id: upload_sarif
@@ -275,16 +277,9 @@ jobs:
               })
             }
 
-      - name: Install Grype (Deletable Rules Check)
-        id: install_grype_rules
-        uses: anchore/scan-action/download-grype@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
-
       - name: Check .grype.yml for Deletable Rules
         id: grype_stale
         shell: bash
-        env:
-          GRYPE: ${{ steps.install_grype_rules.outputs.cmd }}
-          IMAGE: docker:${{ github.sha }}
         run: |
           set -euo pipefail
 
@@ -296,9 +291,6 @@ jobs:
             exit 0
           fi
 
-          # Same settings as the Scan step; JSON includes .ignoredMatches + appliedIgnoreRules
-          "${GRYPE}" "${IMAGE}" --only-fixed -o json=.grype-ignores.json
-
           # Rules with position and real line number (yq skips leading comments/blank lines/'---')
           lineOffset=$(awk '!/^[[:space:]]*(#.*)?$/ && !/^---[[:space:]]*$/ {print NR-1; exit}' .own-grype.yml)
           yq -o=json '[(.ignore // []) | to_entries[] | .value + {"__line": (.value | line), "__index": .key}]' .own-grype.yml \
@@ -306,7 +298,7 @@ jobs:
 
           # A rule is in use if Grype applied it to any ignored match. Grype records ALL
           # rules that apply, so a rule covering an unfixed vuln still counts alongside only-fixed.
-          jq -n --slurpfile rules .own-grype-rules.json --slurpfile scan .grype-ignores.json '
+          jq -n --slurpfile rules .own-grype-rules.json --slurpfile scan result.json '
             def blank: . == null or . == "" or . == {};
             def rulekey: {
               v:  (if (.vulnerability | blank) then null else .vulnerability end),
