@@ -275,7 +275,6 @@ jobs:
               })
             }
 
-
       - name: Show Deletable .grype.yml Rules
         id: grype_deletable
         continue-on-error: true
@@ -345,7 +344,12 @@ jobs:
               echo ""
               echo "| Line | Vulnerability | Package | Reason |"
               echo "|---|---|---|---|"
-              jq -r '.[] | "| \(.__line) | \(.vulnerability) | \(.package.location // .package.name // "-") | \(.reason // "-") |"' .deletable.json
+              # Reasons can be multi-line (YAML "|") or contain "|": flatten them so the table stays intact
+              jq -r '
+                def cell: tostring | gsub("[\\s]+"; " ") | gsub("\\|"; "/") | sub("^ +"; "") | sub(" +$"; "")
+                          | if length > 160 then .[0:157] + "..." else . end;
+                .[] | "| \(.__line) | \(.vulnerability | cell) | \(.package.location // .package.name // "-" | cell) | \(.reason // "-" | cell) |"
+              ' .deletable.json
               echo ""
               echo "<details><summary>.grype.yml with these rules removed</summary>"
               echo ""
