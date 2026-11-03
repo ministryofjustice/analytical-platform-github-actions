@@ -224,7 +224,7 @@ jobs:
             echo "high-count=${HIGH_COUNT}"
           } >>"${GITHUB_OUTPUT}"
 
-      - name: Show Deletable .grype.yml Rules
+      - name: Identify Removable CVE Ignores
         id: grype_deletable
         continue-on-error: true
         shell: bash
