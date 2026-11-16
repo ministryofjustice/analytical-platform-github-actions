@@ -22,7 +22,7 @@ jobs:
       - name: Harden Runner
         if: github.event.repository.private == false
         id: harden_runner
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
         with:
           egress-policy: audit
 
@@ -46,7 +46,7 @@ jobs:
 
       - name: Checkout (use main for .grype.yml)
         id: checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: main
@@ -97,7 +97,7 @@ jobs:
 
       - name: Build Container Image
         id: build
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           push: false
@@ -106,7 +106,7 @@ jobs:
 
       - name: Scan
         id: scan
-        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         with:
           image: ${{ github.sha }}
           severity-cutoff: high
@@ -224,6 +224,88 @@ jobs:
             echo "high-count=${HIGH_COUNT}"
           } >>"${GITHUB_OUTPUT}"
 
+      - name: Identify Removable CVE Ignores
+        id: grype_deletable
+        continue-on-error: true
+        shell: bash
+        env:
+          IMAGE: ${{ github.sha }}
+          GRYPE_CHECK_FOR_APP_UPDATE: "false"
+          GRYPE_DB_AUTO_UPDATE: "false"
+        run: |
+          set -euo pipefail
+
+          if ! git show HEAD:.grype.yml > .own-grype.yml 2>/dev/null; then
+            echo "No .grype.yml in repo, nothing to check"; exit 0
+          fi
+
+          # Grype binary installed by anchore/scan-action (tool cache)
+          GRYPE=$(find "${RUNNER_TOOL_CACHE}/grype" -type f -name grype 2>/dev/null | sort -V | tail -n1)
+          [[ -x "${GRYPE}" ]] || { echo "::warning::Grype from the Scan step not found; skipping"; exit 0; }
+          echo "Using ${GRYPE}"
+          set +e
+          "${GRYPE}" -v --fail-on high --only-fixed -o json --file .deletable-scan.json "${IMAGE}"
+          rc=$?
+          set -e
+          [[ ${rc} -eq 0 || ${rc} -eq 2 ]] || { echo "::warning::grype failed (exit ${rc}); skipping"; exit 0; }
+          lineOffset=$(awk '!/^[[:space:]]*(#.*)?$/ && !/^---[[:space:]]*$/ {print NR-1; exit}' .own-grype.yml)
+          yq -o=json '[(.ignore // []) | to_entries[] | .value + {"__line": (.value | line), "__index": .key}]' .own-grype.yml \
+            | jq --argjson off "${lineOffset:-0}" 'map(.__line += $off)' > .own-grype-rules.json
+
+          mapfile -t ruleIds < <(jq -r '[.[].vulnerability // empty] | unique[]' .own-grype-rules.json)
+          echo "[]" > .aliases.json
+          if [[ ${#ruleIds[@]} -gt 0 ]]; then
+            if ! "${GRYPE}" db search vuln "${ruleIds[@]}" -o json > .aliases.json 2>/dev/null; then
+              for id in "${ruleIds[@]}"; do
+                "${GRYPE}" db search vuln "${id}" -o json 2>/dev/null || echo "[]"
+              done | jq -s 'add' > .aliases.json
+            fi
+            if [[ "$(jq length .aliases.json)" -eq 0 ]]; then
+              echo "::warning::Could not look up vulnerability aliases; skipping"; exit 0
+            fi
+          fi
+
+          jq -n --slurpfile rules .own-grype-rules.json --slurpfile scan .deletable-scan.json --slurpfile db .aliases.json '
+            def up: ascii_upcase;
+            def groups: [ $db[0][]? | ([.id] + (.aliases // [])) | map(up) ];
+            def family($id): ([$id] + [ groups[] | select(index($id)) | .[] ]) | unique;
+            ([ ($scan[0].matches[]?, $scan[0].ignoredMatches[]?)
+               | .vulnerability.id, (.relatedVulnerabilities[]?.id) ] | map(up) | unique) as $present
+            | [ $rules[0][]
+                | select((.vulnerability // "") != "")
+                | select(family(.vulnerability | up) as $f | any($f[]; . as $x | $present | index($x)) | not) ]
+          ' > .deletable.json
+
+          COUNT=$(jq length .deletable.json)
+          {
+            echo "## Rules that can be deleted from .grype.yml: ${COUNT}"
+            echo ""
+            if [[ "${COUNT}" -eq 0 ]]; then
+              echo "✅ None."
+            else
+              echo "These vulnerabilities are no longer in the image under any ID (CVE, GO, GHSA)."
+              echo ""
+              echo "| Line | Vulnerability | Package | Reason |"
+              echo "|---|---|---|---|"
+              jq -r '
+                def cell: tostring | gsub("[\\s]+"; " ") | gsub("\\|"; "/") | sub("^ +"; "") | sub(" +$"; "")
+                          | if length > 160 then .[0:157] + "..." else . end;
+                .[] | "| \(.__line) | \(.vulnerability | cell) | \(.package.location // .package.name // "-" | cell) | \(.reason // "-" | cell) |"
+              ' .deletable.json
+              echo ""
+              echo "<details><summary>.grype.yml with these rules removed</summary>"
+              echo ""
+              echo '```yaml'
+              yq "$(jq -r '"del(" + ([.[].__index | ".ignore[\(.)]"] | join(", ")) + ")"' .deletable.json)" .own-grype.yml
+              echo '```'
+              echo ""
+              echo "</details>"
+            fi
+            echo ""
+          } >>"${GITHUB_STEP_SUMMARY}"
+
+          [[ "${COUNT}" -eq 0 ]] || echo "::warning::${COUNT} rule(s) in .grype.yml can be deleted"
+
       - name: Fail Build on Findings
         if: |
           steps.process_scan_result.outputs.critical-count > 0 ||
@@ -240,7 +322,7 @@ jobs:
       - name: Slack CVE Alert
         if: always() && (steps.process_scan_result.outputs.critical-count > 0 || steps.process_scan_result.outputs.high-count > 0 || steps.build.outcome == 'failure')
         id: slack_cve_alert
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           webhook-type: webhook-trigger
           webhook: ${{ secrets.cve-scan-slack-webhook-url }}
