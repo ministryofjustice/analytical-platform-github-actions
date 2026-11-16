@@ -138,7 +138,7 @@ jobs:
           # The finding message text is rewritten to match the classified severity so the output is consistent.
 
           RULE_SEVERITIES=$(echo "${SARIF}" | jq -c '
-            .runs[0].tool.driver.rules
+            (.runs[0].tool.driver.rules // [])
             | map({key: .id, value: (.properties["security-severity"] // "0" | tonumber)})
             | from_entries
           ')
@@ -170,7 +170,7 @@ jobs:
                 echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" \
                   --argjson min "${min_score}" --argjson max "${max_score}" \
                   --arg severity "${severity}" '
-                  (.runs[0].tool.driver.rules
+                  (.runs[0].tool.driver.rules // []
                     | map({
                         key: .id,
                         value: (
